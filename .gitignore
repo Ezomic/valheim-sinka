@@ -15,3 +15,8 @@ testprofile/
 # Thunderstore packaging: staging folder and the zips tcli writes.
 package/
 build/
+
+# Thunderstore packages, rebuilt by own-profile/package.ps1 from the source in this repo.
+# A zip in git is a build output, not a source, and it goes stale the moment anything under
+# src or assets changes.
+dist/
