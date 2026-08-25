@@ -98,7 +98,11 @@ like the fence list.
 ## Credit where it is due
 
 This mod is written from scratch and shares no code with anything else, but it does not
-pretend to have invented the idea. Two mods came first and both are worth naming.
+pretend to have invented the idea. Several mods came first, and they fall into two groups:
+the ones that also write snap points onto prefabs, which this cannot be run beside, and the
+ones that solve the same problem some other way, which it can.
+
+### The ones that add snap points
 
 **FenceSnap**, by **MSchmoecker**. The ladder of points up each end of a fence is its idea,
 and its hand-tuned numbers are also what caught a bug here: FenceSnap puts `wood_fence`
@@ -116,8 +120,23 @@ and does far more than this one: manual snapping with keybinds to cycle points, 
 snapping, and points added by piece shape across beams, triangles, rectangles and roofs. If
 you want the whole toolbox rather than chests and fences that line up, use it instead.
 
-Do not run this alongside any of them. It skips pieces that already have snap points, so
-whichever registers first wins, which is a coin toss rather than a decision.
+Do not run this alongside any of the three. It skips pieces that already have snap points,
+so whichever registers first wins, which is a coin toss rather than a decision.
+
+### The ones that work another way
+
+**Snap Points Made Easy**, by **MathiasDecrock**, at 1.3.3. It cycles the points a piece
+already carries, with separate keys for the ghost's point and the target's, so you pick the
+one you want instead of aiming the mouse at it. It adds no points of its own, which means a
+chest that has none stays exactly as unsnappable as it was. That also makes it the one mod
+here that composes rather than competes: this puts the eight corners on, that picks between
+them.
+
+**PrecisePlacement**, originally by **Koosemose** and re-uploaded by **AcidWerks** at 1.1.1,
+now marked deprecated. Free rotation about any axis, arrow-key nudging at a chosen step, and
+copying a targeted piece's exact rotation and position onto the one you are holding. That
+last one lines up a row of anything at all, snap points or not. It touches no prefab, so
+there is nothing here for it to collide with.
 
 ## Building
 
