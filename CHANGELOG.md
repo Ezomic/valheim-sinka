@@ -3,6 +3,14 @@
 Notable changes to Sinka. Format follows [Keep a Changelog](https://keepachangelog.com),
 and the mod uses [semantic versioning](https://semver.org).
 
+## [1.0.0] - 2026-08-27
+
+The 0.9.0 build, proven in play and given its release number - chests snap flush beside
+and atop each other, fences ladder up hillsides, and world-spawned loot stays unsnappable.
+Renamed from Dovetail on the way: Sinka is the dovetail joint itself in the Scandinavian
+tongues, beside the pack's other Old Norse names. Nothing was published under the old
+name, so nothing breaks.
+
 ## [Unreleased]
 
 ### Changed

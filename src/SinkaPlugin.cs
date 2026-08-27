@@ -14,7 +14,7 @@ namespace Sinka
     {
         public const string PluginGuid = "ezomic.valheim.sinka";
         public const string PluginName = "Sinka";
-        public const string PluginVersion = "0.9.0";
+        public const string PluginVersion = "1.0.0";
         public const string PluginAuthor = "Robbin Thijssen";
 
         internal static ManualLogSource Log;
