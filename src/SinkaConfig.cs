@@ -4,9 +4,9 @@ using System.Globalization;
 using BepInEx.Configuration;
 using UnityEngine;
 
-namespace Dovetail
+namespace Sinka
 {
-    internal static class DovetailConfig
+    internal static class SinkaConfig
     {
         /// <summary>
         /// Vanilla fences and stake walls, which ship with no snap points of their own.
@@ -229,7 +229,7 @@ namespace Dovetail
 
         private static void Warn(string message)
         {
-            if (DovetailPlugin.Log != null) DovetailPlugin.Log.LogWarning(message);
+            if (SinkaPlugin.Log != null) SinkaPlugin.Log.LogWarning(message);
         }
 
         private static HashSet<string> Split(string value)

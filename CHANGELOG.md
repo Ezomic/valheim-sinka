@@ -1,13 +1,13 @@
 # Changelog
 
-Notable changes to Dovetail. Format follows [Keep a Changelog](https://keepachangelog.com),
+Notable changes to Sinka. Format follows [Keep a Changelog](https://keepachangelog.com),
 and the mod uses [semantic versioning](https://semver.org).
 
 ## [Unreleased]
 
 ### Changed
 
-- **Core is gone entirely.** Dovetail no longer references Core, declares it as a soft
+- **Core is gone entirely.** Sinka no longer references Core, declares it as a soft
   dependency, or registers with its version gate. It was already optional; now it is absent.
   Nothing here has to agree with anything running elsewhere, which is what lets this be
   played and versioned on its own. The gate is what is given up: nothing reports two ends
@@ -111,7 +111,7 @@ and 1.0.0 will be the release.
 - **Core is optional.** Installed, it is used: the mod joins Core's version gate, which
   compares mod versions and build ids on connect and refuses a client that disagrees. That
   matters here because this adds child transforms to shared prefabs. Absent, nothing is
-  degraded and the mod runs standalone, so installing Dovetail no longer pulls Core in with
+  degraded and the mod runs standalone, so installing Sinka no longer pulls Core in with
   it. A hard dependency would have been worse than no gate at all, since a missing hard
   dependency means the plugin never loads.
 

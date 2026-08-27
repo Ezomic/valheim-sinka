@@ -1,8 +1,8 @@
 {
-  "name": "Dovetail",
+  "name": "Sinka",
   "author": "Robbin Thijssen",
   "version_number": "0.9.0",
-  "website_url": "https://github.com/Ezomic/valheim-dovetail",
+  "website_url": "https://github.com/Ezomic/valheim-sinka",
   "description": "Snap points for chests, fences and anything else that will not line up.",
   "dependencies": [
     "denikson-BepInExPack_Valheim-5.4.2333"

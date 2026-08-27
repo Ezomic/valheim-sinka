@@ -6,10 +6,10 @@ schemaVersion = "0.0.1"
 
 [package]
 namespace = "Ezomic"
-name = "Dovetail"
+name = "Sinka"
 versionNumber = "0.9.0"
 description = "Snap points for chests, fences and anything else that will not line up."
-websiteUrl = "https://github.com/Ezomic/valheim-dovetail"
+websiteUrl = "https://github.com/Ezomic/valheim-sinka"
 containsNsfwContent = false
 
 [package.dependencies]
@@ -21,8 +21,8 @@ readme = "./README.md"
 outdir = "./build"
 
 [[build.copy]]
-source = "./package/BepInEx/plugins/Dovetail"
-target = "plugins/Dovetail"
+source = "./package/BepInEx/plugins/Sinka"
+target = "plugins/Sinka"
 
 [publish]
 repository = "https://thunderstore.io"

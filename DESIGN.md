@@ -1,4 +1,4 @@
-# Dovetail design notes
+# Sinka design notes
 
 Why it works the way it does, and how it is built. None of this is needed to play; for that
 see the [README](README.md).
@@ -85,7 +85,7 @@ after it is standing. Six vanilla prefabs are like this on a stock install, the 
 gifts and the three pots, so this is reported as one line at startup rather than one per
 piece.
 
-Dovetail says so in the log and leaves it there. Both ChestSnap and FenceSnap carry a
+Sinka says so in the log and leaves it there. Both ChestSnap and FenceSnap carry a
 `FixPiece` that rewrites every collider onto the piece layer, and that is a real fix, but it
 changes what those colliders collide with. That is too large a side effect to apply silently
 to somebody else's content, and the piece belongs to whoever shipped it.

@@ -2,13 +2,13 @@
 
   <PropertyGroup>
     <TargetFramework>net462</TargetFramework>
-    <AssemblyName>Dovetail</AssemblyName>
-    <RootNamespace>Dovetail</RootNamespace>
+    <AssemblyName>Sinka</AssemblyName>
+    <RootNamespace>Sinka</RootNamespace>
     <LangVersion>latest</LangVersion>
     <Version>0.9.0</Version>
     <Authors>Robbin Thijssen</Authors>
     <Company>Thijssen Software</Company>
-    <Product>Dovetail</Product>
+    <Product>Sinka</Product>
     <Description>Snap points for chests, fences and anything else that will not line up.</Description>
     <Copyright>Copyright (c) 2026 Robbin Thijssen</Copyright>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
@@ -22,7 +22,7 @@
     <ManagedDir>$(ValheimDir)\valheim_Data\Managed</ManagedDir>
     <ProfileDir Condition="'$(ProfileDir)' == ''">$(MSBuildProjectDirectory)\testprofile</ProfileDir>
     <BepInExCore>$(ProfileDir)\BepInEx\core</BepInExCore>
-    <DeployDir>$(ProfileDir)\BepInEx\plugins\Dovetail</DeployDir>
+    <DeployDir>$(ProfileDir)\BepInEx\plugins\Sinka</DeployDir>
   </PropertyGroup>
 
   <ItemGroup>

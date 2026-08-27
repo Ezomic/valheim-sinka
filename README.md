@@ -1,4 +1,4 @@
-# Dovetail
+# Sinka
 
 Chests and fences that line up. Place one, and the next snaps flush beside it or squarely
 on top, with no nudging, no eyeballing, no gaps you only notice after you have built the wall.
@@ -69,7 +69,7 @@ the wrong distance.
 
 Some pieces snap in one direction only, because their colliders sit on a layer the game's own
 proximity search does not look at. Six vanilla prefabs are like this on a stock install and
-Dovetail reports them at startup rather than rewriting somebody else's colliders.
+Sinka reports them at startup rather than rewriting somebody else's colliders.
 
 ## When derivation gets it wrong
 
@@ -150,7 +150,7 @@ into the shared play profile with `valheim-own-profile\build-all.ps1`.
 
 ## No dependencies at all
 
-Dovetail needs nothing but BepInEx. It does not use [Core](https://github.com/Ezomic/valheim-core)
+Sinka needs nothing but BepInEx. It does not use [Core](https://github.com/Ezomic/valheim-core)
 and does not register with its version gate, so there is no handshake to fail and no other
 mod it has to agree with. Install it on its own.
 
@@ -160,7 +160,7 @@ disagreement passes unnoticed. Solo, none of that applies.
 
 ## Config
 
-`BepInEx\config\ezomic.valheim.dovetail.cfg`
+`BepInEx\config\ezomic.valheim.sinka.cfg`
 
 | Key | Default | What it does |
 | --- | --- | --- |
@@ -190,5 +190,5 @@ had to exclude, and why the one-way pieces are reported rather than fixed:
 
 ## Author
 
-Dovetail is an original mod by **Robbin Thijssen** (Thijssen Software).
+Sinka is an original mod by **Robbin Thijssen** (Thijssen Software).
 Copyright (c) 2026 Robbin Thijssen. MIT licensed. See `LICENSE`.

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Dovetail
+namespace Sinka
 {
     /// <summary>
     /// Gives every container piece snap points at the eight corners of its own footprint,
@@ -70,7 +70,7 @@ namespace Dovetail
                 // chest its snap points, not every chest after it in the list.
                 try
                 {
-                    var points = DovetailConfig.PointOverride(prefab.name);
+                    var points = SinkaConfig.PointOverride(prefab.name);
                     var ladder = points == null && UseLadder(prefab);
 
                     var added = points != null
@@ -86,7 +86,7 @@ namespace Dovetail
                 }
                 catch (System.Exception e)
                 {
-                    DovetailPlugin.Log.LogWarning(
+                    SinkaPlugin.Log.LogWarning(
                         "Could not snap " + prefab.name + ": " + e.Message);
                 }
 
@@ -94,7 +94,7 @@ namespace Dovetail
             }
 
             if (oneWay.Count > 0)
-                DovetailPlugin.Log.LogWarning(
+                SinkaPlugin.Log.LogWarning(
                     "These have snap points, but none of their colliders are on the piece or "
                     + "piece_nonsolid layer, which is where the game looks for something to "
                     + "snap to: " + string.Join(", ", oneWay.ToArray()) + ". Placing one still "
@@ -103,7 +103,7 @@ namespace Dovetail
                     + "something this mod will change for it.");
 
             _appliedTo = scene;
-            DovetailPlugin.Log.LogInfo(
+            SinkaPlugin.Log.LogInfo(
                 "Added snap points to " + touched + " piece(s): " + laddered
                 + " fence ladder, " + custom + " from PointOverrides, "
                 + (touched - laddered - custom) + " corners. " + skipped
@@ -169,8 +169,8 @@ namespace Dovetail
             for (var i = 0; i < points.Length; i++)
                 Create(prefab, "snap_custom" + (i + 1), points[i]);
 
-            if (DovetailConfig.Verbose.Value)
-                DovetailPlugin.Log.LogInfo(
+            if (SinkaConfig.Verbose.Value)
+                SinkaPlugin.Log.LogInfo(
                     prefab.name + ": " + points.Length + " point(s) from PointOverrides");
 
             return true;
@@ -183,10 +183,10 @@ namespace Dovetail
         /// </summary>
         private static void ReportMissingNames()
         {
-            if (DovetailConfig.SnapFences.Value)
-                Report("FencePrefabs", DovetailConfig.ConfiguredFences());
+            if (SinkaConfig.SnapFences.Value)
+                Report("FencePrefabs", SinkaConfig.ConfiguredFences());
 
-            Report("PointOverrides", DovetailConfig.ConfiguredOverrides());
+            Report("PointOverrides", SinkaConfig.ConfiguredOverrides());
         }
 
         private static void Report(string setting, System.Collections.Generic.IEnumerable<string> names)
@@ -197,7 +197,7 @@ namespace Dovetail
 
             if (missing.Count == 0) return;
 
-            DovetailPlugin.Log.LogWarning(
+            SinkaPlugin.Log.LogWarning(
                 setting + " names that match no prefab: " + string.Join(", ", missing.ToArray()));
         }
 
@@ -227,25 +227,25 @@ namespace Dovetail
 
             // Exclusions win over everything, including an override - the setting says
             // "whatever else matches", and a list you cannot override is not an escape hatch.
-            if (DovetailConfig.IsExcluded(prefab.name)) return false;
+            if (SinkaConfig.IsExcluded(prefab.name)) return false;
 
             // Naming a prefab in PointOverrides is a decision, so it does not have to qualify
             // some other way and it skips the buildable filter too - an explicit name is more
             // specific than any heuristic here, and someone naming a loot chest to snap their
             // own pieces against has said what they want. It still loses to an exclusion.
-            var named = DovetailConfig.HasPointOverride(prefab.name);
+            var named = SinkaConfig.HasPointOverride(prefab.name);
 
             if (!named && !Buildable.Includes(prefab)) return false;
 
             if (named) return true;
 
-            if (DovetailConfig.SnapContainers.Value && prefab.GetComponent<Container>() != null)
+            if (SinkaConfig.SnapContainers.Value && prefab.GetComponent<Container>() != null)
                 return true;
 
-            if (DovetailConfig.SnapFences.Value && DovetailConfig.IsFence(prefab.name))
+            if (SinkaConfig.SnapFences.Value && SinkaConfig.IsFence(prefab.name))
                 return true;
 
-            return DovetailConfig.SnapUnsnappedPieces.Value;
+            return SinkaConfig.SnapUnsnappedPieces.Value;
         }
 
         private static bool HasSnapPoints(Transform root)
@@ -265,7 +265,7 @@ namespace Dovetail
             // point ends up on chest B's left point, and each contributed half the space.
             // Hence Gap/2, and hence pushing the corners out rather than pulling them in -
             // insetting them would make the chests overlap by the same arithmetic.
-            var out2 = Mathf.Max(0f, DovetailConfig.Gap.Value) * 0.5f;
+            var out2 = Mathf.Max(0f, SinkaConfig.Gap.Value) * 0.5f;
             var extents = bounds.extents + new Vector3(out2, out2, out2);
 
             foreach (var x in new[] { -1, 1 })
@@ -283,8 +283,8 @@ namespace Dovetail
                 Create(prefab, "snap_" + name, corner);
             }
 
-            if (DovetailConfig.Verbose.Value)
-                DovetailPlugin.Log.LogInfo(
+            if (SinkaConfig.Verbose.Value)
+                SinkaPlugin.Log.LogInfo(
                     prefab.name + ": footprint " + bounds.size.ToString("F2")
                     + " centred " + bounds.center.ToString("F2"));
 
@@ -310,9 +310,9 @@ namespace Dovetail
         /// </summary>
         private static bool UseLadder(GameObject prefab)
         {
-            return DovetailConfig.SnapFences.Value
-                   && DovetailConfig.FenceLadderStep.Value > 0f
-                   && DovetailConfig.IsFence(prefab.name);
+            return SinkaConfig.SnapFences.Value
+                   && SinkaConfig.FenceLadderStep.Value > 0f
+                   && SinkaConfig.IsFence(prefab.name);
         }
 
         /// <summary>
@@ -340,10 +340,10 @@ namespace Dovetail
             // Same arithmetic as the corners: snapping makes the two points one point, so
             // each piece contributes half the gap.
             var reach = (alongX ? bounds.extents.x : bounds.extents.z)
-                        + Mathf.Max(0f, DovetailConfig.Gap.Value) * 0.5f;
+                        + Mathf.Max(0f, SinkaConfig.Gap.Value) * 0.5f;
 
-            var step = DovetailConfig.FenceLadderStep.Value;
-            var bottom = bounds.min.y - Mathf.Max(0f, DovetailConfig.FenceLadderBelow.Value);
+            var step = SinkaConfig.FenceLadderStep.Value;
+            var bottom = bounds.min.y - Mathf.Max(0f, SinkaConfig.FenceLadderBelow.Value);
 
             var rungs = Mathf.FloorToInt((bounds.max.y - bottom) / step) + 1;
             var capped = rungs > MaxRungs;
@@ -359,14 +359,14 @@ namespace Dovetail
                 AddRung(prefab, bounds, alongX, reach, bounds.max.y);
 
             if (capped)
-                DovetailPlugin.Log.LogWarning(
+                SinkaPlugin.Log.LogWarning(
                     prefab.name + " is " + bounds.size.y.ToString("F2") + "m tall and "
                     + "FenceLadderStep is " + step + "m, which wants more than " + MaxRungs
                     + " rungs. The ladder stops at " + highest.ToString("F2")
                     + "m - raise the step to cover the whole piece.");
 
-            if (DovetailConfig.Verbose.Value)
-                DovetailPlugin.Log.LogInfo(
+            if (SinkaConfig.Verbose.Value)
+                SinkaPlugin.Log.LogInfo(
                     prefab.name + ": footprint " + bounds.size.ToString("F2")
                     + " centred " + bounds.center.ToString("F2")
                     + ", ladder of " + rungs + " along " + (alongX ? "x" : "z"));
@@ -445,8 +445,8 @@ namespace Dovetail
                 // Which collider is responsible for an oversized box is the one thing you
                 // want to know when a piece snaps at the wrong distance, and it used to
                 // take a rip to find out.
-                if (DovetailConfig.Verbose.Value)
-                    DovetailPlugin.Log.LogInfo(
+                if (SinkaConfig.Verbose.Value)
+                    SinkaPlugin.Log.LogInfo(
                         "    " + PathTo(collider.transform, root) + " " + box.size.ToString("F2"));
             }
 

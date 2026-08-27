@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Dovetail
+namespace Sinka
 {
     /// <summary>
     /// The set of prefabs that actually appear in a build menu.
@@ -42,14 +42,14 @@ namespace Dovetail
 
         public static bool Ready()
         {
-            if (!DovetailConfig.BuildablePiecesOnly.Value) return true;
+            if (!SinkaConfig.BuildablePiecesOnly.Value) return true;
             if (Build()) return true;
             if (_gaveUp) return true;
 
             if (++_waited < MaxWaitFrames) return false;
 
             _gaveUp = true;
-            DovetailPlugin.Log.LogWarning(
+            SinkaPlugin.Log.LogWarning(
                 "No piece tables found after " + MaxWaitFrames + " frames, so "
                 + "BuildablePiecesOnly cannot be applied. Snapping everything with a Piece "
                 + "component instead, which includes dungeon loot chests and pots.");
@@ -59,7 +59,7 @@ namespace Dovetail
 
         public static bool Includes(GameObject prefab)
         {
-            if (!DovetailConfig.BuildablePiecesOnly.Value) return true;
+            if (!SinkaConfig.BuildablePiecesOnly.Value) return true;
 
             // No set means Ready() gave up. Unfiltered, deliberately - see MaxWaitFrames.
             if (_names == null) return true;
@@ -103,7 +103,7 @@ namespace Dovetail
             // A mod that adds pieces to a table after this runs is not covered, and there is
             // no event to hang that off. PointOverrides names a prefab explicitly and skips
             // this check, which is the way out if it ever comes up.
-            DovetailPlugin.Log.LogInfo(
+            SinkaPlugin.Log.LogInfo(
                 "Buildable set: " + names.Count + " piece(s) across " + tables + " piece table(s).");
 
             return true;

@@ -2,18 +2,18 @@ using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;
 
-namespace Dovetail
+namespace Sinka
 {
     [BepInPlugin(PluginGuid, PluginName, PluginVersion)]
     // No BepInProcess, but this is a client-side mod in practice: snapping is placement-time,
-    // and Dovetail is deliberately out of the server package and the server build list. It
+    // and Sinka is deliberately out of the server package and the server build list. It
     // also no longer registers with Core's version gate, so nothing here has to agree with
     // anything running anywhere else - which is the point, and why it can be played and
     // versioned on its own.
-    public class DovetailPlugin : BaseUnityPlugin
+    public class SinkaPlugin : BaseUnityPlugin
     {
-        public const string PluginGuid = "ezomic.valheim.dovetail";
-        public const string PluginName = "Dovetail";
+        public const string PluginGuid = "ezomic.valheim.sinka";
+        public const string PluginName = "Sinka";
         public const string PluginVersion = "0.9.0";
         public const string PluginAuthor = "Robbin Thijssen";
 
@@ -24,7 +24,7 @@ namespace Dovetail
         private void Awake()
         {
             Log = Logger;
-            DovetailConfig.Bind(Config);
+            SinkaConfig.Bind(Config);
 
             _harmony = new Harmony(PluginGuid);
             _harmony.PatchAll(typeof(ScenePatches));
