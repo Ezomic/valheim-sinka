@@ -3,7 +3,7 @@
 Chests and fences that line up. Place one, and the next snaps flush beside it or squarely
 on top, with no nudging, no eyeballing, no gaps you only notice after you have built the wall.
 
-Built against the installed game (0.221.12, Unity 6000.0.61, BepInEx 5.4.23.3, Harmony 2.9).
+Built against the installed game (1.0.7, Unity 6000.0.75, BepInEx 5.4.23.5, Harmony 2.9).
 Single DLL, no asset bundle.
 
 Named for chests because that is where it started; it now covers fences and stake walls
