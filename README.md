@@ -1,166 +1,100 @@
 # Sinka
 
-Chests and fences that line up. Place one, and the next snaps flush beside it or squarely
-on top, with no nudging, no eyeballing, no gaps you only notice after you have built the wall.
+Sinka adds snap points to the vanilla pieces that ship without any, mainly chests, fences
+and stake walls. Place one and the next snaps flush beside it or squarely on top, the same
+way walls and floors already do.
 
-Built against the installed game (1.0.7, Unity 6000.0.75, BepInEx 5.4.23.5, Harmony 2.9).
-Single DLL, no asset bundle.
+Named for the dovetail joint. It started as a chest mod and now covers fences too; the name
+stayed so existing config files keep working.
 
-Named for chests because that is where it started; it now covers fences and stake walls
-too. The name stays so existing configs keep working.
+## Features
 
-## How it works
+- Eight snap points, one on each corner of a piece's own measured footprint.
+- Fences and stake walls get a ladder of points up each end instead, so a fence line can
+  follow sloping ground.
+- Containers are matched by component, so modded chests are covered without naming them.
+- Fences are matched by a config list you can extend.
+- `PointOverrides` takes exact coordinates for a named prefab when the derived box is wrong.
+- Optional: snap every buildable piece the game never gave points to.
+- Pieces that already have snap points, vanilla or from another mod, are left alone.
+- Nothing is added to prefabs you cannot build, so dungeon loot chests and pots stay
+  unsnappable.
 
-A snap point in Valheim is nothing but a child transform tagged `snappoint`. Chests and
-fences have none, which is exactly why they are fiddly to line up while walls and floors are
-not. This mod measures each piece's own footprint at load and puts a point on all **eight
-corners** of it, so a ghost's left corner landing on a placed piece's right corner is flush
-adjacency and a bottom corner on a top corner is a clean stack. Fences are the exception and
-get a ladder of points up each end, for reasons that come down to sloping ground.
+## How the snapping works
 
-Snapping makes the two points coincide, so the `Gap` setting pushes the corners *outward* by
-half its value: each of the two pieces contributes half the space between them.
+A snap point in Valheim is a child transform tagged `snappoint`, and that is all the game
+needs. While you hold a placement ghost, `FindClosestSnapPoints` picks the closest pair of
+points within 0.5m, one on the ghost and one on a placed piece nearby, then moves the ghost
+so the two points become the same point.
 
-## Fences get a ladder instead
+That rule is why Sinka uses corners and nothing else. A ghost's left corner landing on a
+placed chest's right corner is flush adjacency, and a bottom corner landing on a top corner
+is a clean stack. Mixing corners with face centres would let a chest snap half its own
+width out of line.
 
-Eight corners give a fence exactly two heights to attach at: its base, and a full panel
-up. Neither is any use for running a fence up a hill, which is most of what you do with a
-fence. So a fence gets points up **both ends, at mid-depth, every `FenceLadderStep`
-metres**, starting `FenceLadderBelow` metres under its own base so the next panel can step
-down as well as up.
+`Gap` pushes the corners outward by half its value, since both pieces contribute half the
+space between them. `Gap = 0.1` leaves 10cm between two chained chests.
 
-This idea is **MSchmoecker's**, from FenceSnap. It hand-places seven rungs 0.2m apart on
-`wood_fence` plus one below the base. The difference here is that the rungs are derived
-from the measured footprint rather than typed in, so a modded fence that nobody has
-measured gets the same treatment from one config entry.
+Footprints are measured at load from collider data, and only from the geometry that will
+actually be standing there. A built piece carries its damage states and destruction chunks
+in the same prefab, and measuring all of them at once inflates the box: `wood_fence` comes
+out 2.72 x 2.30 x 0.85 that way against a panel of roughly 2.0 x 1.5, which would leave
+chained fences standing 0.72m apart.
+
+### The fence ladder
+
+Eight corners give a fence two heights to attach at, its base and a full panel up. Neither
+helps you run a fence up a hill, so a fence gets points up both ends instead, at mid-depth,
+every `FenceLadderStep` metres, starting `FenceLadderBelow` metres under its own base so
+the next panel can step down as well as up. The rungs run along whichever horizontal axis
+of the piece is longer.
+
+The ladder is capped at 24 rungs per piece. A tall piece with a small step hits that cap and
+logs a warning saying where the ladder stopped.
+
+### Picking a snap point by hand
+
+Q and E cycle the ghost's snap point while you are holding a piece (`TabLeft` / `TabRight`
+in the keybinds, so they follow a rebind), and the chosen point's name shows in the middle
+of the screen. Sinka names its points by position for that reason:
+`snap_top-front-left` for corners, `snap_left-y0.60` for a fence rung, `snap_custom1` for a
+point you supplied through `PointOverrides`.
 
 ## What gets snapped
 
-**The piece has to be something you can actually build** (`BuildablePiecesOnly`, on).
-Having a `Piece` component is not the same as being buildable, and matching on components
-alone handed points to 35 unplaceable prefabs, so a chest carried into a crypt snapped
-itself to the loot chests standing there. The buildable set is read off the game's own piece
-tables, so the Hammer, Hoe, Cultivator and any modded tool contribute and nothing needs
-naming.
+A piece has to be something you can actually build. The buildable set is read off the game's
+own piece tables, so the Hammer, Hoe, Cultivator and any modded tool with its own table all
+contribute and nothing needs listing. Turning `BuildablePiecesOnly` off drops that filter
+and snaps anything with a `Piece` component, which includes dungeon loot chests and pots.
 
-Then, three ways in, in descending order of confidence that snapping is wanted:
+Past that filter there are three ways in:
 
-**Containers**, matched on components rather than names: anything with both a `Piece` and
-a `Container`. Modded chests are covered without a list to maintain, and nothing rots when
-a prefab is renamed. Ships are excluded; they hold cargo and are technically pieces, but
-snapping a longship to a chest is not what anyone means by chaining storage.
+- **Containers** (`SnapContainers`, on): anything with both a `Piece` and a `Container`.
+  Ships are excluded.
+- **Fences** (`SnapFences`, on): the prefab names in `FencePrefabs`. Nothing about a fence's
+  components distinguishes it from any other wall, so this one needs names.
+- **Everything else with no points of its own** (`SnapUnsnappedPieces`, off): mostly chests,
+  fences and loose decoration, since walls, floors and beams ship with their own. It also
+  catches chairs, banners and item stands, where snapping tends to get in the way.
 
-**Fences**, matched by name, because nothing about a fence's components distinguishes it
-from any other wall. The list is config rather than code, so a wrong or outdated entry is
-something you fix without a build, and any configured name that matches no prefab is
-**reported in the log at startup** rather than silently doing nothing.
+`ExcludePrefabs` wins over all of it, including `PointOverrides`. Prefab names are matched
+case-insensitively everywhere.
 
-**Everything else the developers never gave snap points to** (`SnapUnsnappedPieces`, off by
-default). That set is mostly chests, fences and loose decoration, since walls, floors and
-beams all ship with their own. It is off because it also catches chairs, banners and item
-stands, where snapping tends to fight you rather than help.
+## Installation
 
-Pieces that already have snap points of their own are always left alone.
+1. Install [BepInEx 5.4.2350](https://thunderstore.io/c/valheim/p/denikson/BepInExPack_Valheim/).
+   BepInEx 5 only, not 6.
+2. Install Sinka from [Thunderstore](https://thunderstore.io/c/valheim/p/Ezomic/Sinka/) with
+   a mod manager, or drop `Sinka.dll` into `BepInEx\plugins\Sinka\`.
 
-Footprints are measured from collider data, and from only the geometry that will be standing
-there rather than the damage states and destruction chunks inside the same prefab. `Verbose`
-names every collider it measured from, which is how you find the culprit if a piece snaps at
-the wrong distance.
+No other dependencies. Sinka does not use Longhouse Core.
 
-Some pieces snap in one direction only, because their colliders sit on a layer the game's own
-proximity search does not look at. Six vanilla prefabs are like this on a stock install and
-Sinka reports them at startup rather than rewriting somebody else's colliders.
+Snapping happens on the client while you place a piece, so only the players who want it need
+it. A dedicated server gains nothing from having it installed, and loses nothing either.
 
-## When derivation gets it wrong
+## Configuration
 
-One axis-aligned box cannot describe an L-shape or a piece whose geometry sits off centre,
-and no amount of care will change that. `piece_dvergr_sharpstakes` measures
-2.40 × 1.70 × 3.94 centred 0.35 off in x, so the corners of its box are nowhere near the
-actual stakes. Both mods that came before this one ended up needing per-prefab data for the
-same reason: FenceSnap hand-places its gate points, and ChestSnap moved to a YAML file of
-them.
-
-So `PointOverrides` takes exact points for named prefabs:
-
-```
-PointOverrides = piece_dvergr_sharpstakes: -0.5,0,2 | -0.5,0,-2 ; wooden_fence_1_gate: -2.4,0,0 | -2.4,1.17,0
-```
-
-Semicolons separate prefabs, a colon follows the name, pipes separate points, commas
-separate one point's three coordinates. **Decimals must use a dot**, since a comma already
-means something here. Naming a prefab is enough to get it snapped, so it does not also have
-to be a container or a listed fence, and it skips the buildable filter as well: an explicit
-name is more specific than any heuristic. `ExcludePrefabs` still wins, or it would not be an
-escape hatch you could get back out of. `Gap` and the ladder do not apply, because a point
-given by hand is used exactly as written. Names matching no prefab are reported at startup
-like the fence list.
-
-## Credit where it is due
-
-This mod is written from scratch and shares no code with anything else, but it does not
-pretend to have invented the idea. Several mods came first, and they fall into two groups:
-the ones that also write snap points onto prefabs, which this cannot be run beside, and the
-ones that solve the same problem some other way, which it can.
-
-### The ones that add snap points
-
-**FenceSnap**, by **MSchmoecker**. The ladder of points up each end of a fence is its idea,
-and its hand-tuned numbers are also what caught a bug here: FenceSnap puts `wood_fence`
-points at x = ±1.0, this mod's measured box said ±1.36, and one of those had to be wrong.
-It was this one. Without a second opinion to compare against, that 0.72m gap would have
-been found by building a fence.
-
-**ChestSnap**, by **Frogger**. The original chest snapping mod, and the reason anyone knows
-chests are worth snapping at all. Now at 0.1.1 and driven by a YAML file of snap point
-data, so custom and modded containers are added by editing config rather than by waiting
-for an update.
-
-**Extra Snap Points Made Easy**, by **Searica**, is the broadest mod in this space at 2.0.5
-and does far more than this one: manual snapping with keybinds to cycle points, grid
-snapping, and points added by piece shape across beams, triangles, rectangles and roofs. If
-you want the whole toolbox rather than chests and fences that line up, use it instead.
-
-Do not run this alongside any of the three. It skips pieces that already have snap points,
-so whichever registers first wins, which is a coin toss rather than a decision.
-
-### The ones that work another way
-
-**Snap Points Made Easy**, by **MathiasDecrock**, at 1.3.3. It cycles the points a piece
-already carries, with separate keys for the ghost's point and the target's, so you pick the
-one you want instead of aiming the mouse at it. It adds no points of its own, which means a
-chest that has none stays exactly as unsnappable as it was. That also makes it the one mod
-here that composes rather than competes: this puts the eight corners on, that picks between
-them.
-
-**PrecisePlacement**, originally by **Koosemose** and re-uploaded by **AcidWerks** at 1.1.1,
-now marked deprecated. Free rotation about any axis, arrow-key nudging at a chosen step, and
-copying a targeted piece's exact rotation and position onto the one you are holding. That
-last one lines up a row of anything at all, snap points or not. It touches no prefab, so
-there is nothing here for it to collide with.
-
-## Building
-
-```bash
-dotnet build
-```
-
-Deploys to the repo-local `testprofile\`. Override with `-p:ProfileDir=...`, or build it
-into the shared play profile with `valheim-own-profile\build-all.ps1`.
-
-
-## No dependencies at all
-
-Sinka needs nothing but BepInEx. It does not use [Core](https://github.com/Ezomic/valheim-core)
-and does not register with its version gate, so there is no handshake to fail and no other
-mod it has to agree with. Install it on its own.
-
-What that gives up is the gate itself. Nothing will tell you when two players are running
-different builds of this, and it does add child transforms to shared prefabs, so a
-disagreement passes unnoticed. Solo, none of that applies.
-
-## Config
-
-`BepInEx\config\ezomic.valheim.sinka.cfg`
+`BepInEx\config\ezomic.valheim.sinka.cfg`, written on first run.
 
 | Key | Default | What it does |
 | --- | --- | --- |
@@ -168,27 +102,149 @@ disagreement passes unnoticed. Solo, none of that applies.
 | `SnapFences` | `true` | Snap the pieces named in `FencePrefabs` |
 | `SnapUnsnappedPieces` | `false` | Snap every buildable piece with no snap points of its own |
 | `BuildablePiecesOnly` | `true` | Only snap pieces that appear in a build menu |
-| `PointOverrides` | | Exact points for named prefabs, replacing anything derived |
 | `FencePrefabs` | see below | Comma-separated prefab names treated as fences |
-| `ExcludePrefabs` | | Comma-separated names to leave alone whatever else matches |
-| `Gap` | `0` | Metres left between chained pieces; `0` is flush |
-| `FenceLadderStep` | `0.2` | Vertical spacing of a fence's rungs; `0` gives fences plain corners |
-| `FenceLadderBelow` | `0.2` | How far under its own base a fence's lowest rung sits |
+| `ExcludePrefabs` | empty | Comma-separated prefab names to leave alone, whatever else matches |
+| `PointOverrides` | empty | Exact points for named prefabs, replacing anything derived |
+| `Gap` | `0` | Metres left between two chained pieces. `0` is flush; negative values are ignored |
+| `FenceLadderStep` | `0.2` | Vertical spacing of a fence's rungs, in metres. `0` gives fences plain corners |
+| `FenceLadderBelow` | `0.2` | How far under its own base a fence's lowest rung sits, in metres |
 | `Verbose` | `false` | Log the measured footprint of every piece that gets points, and the colliders behind it |
 
-`FencePrefabs` defaults to `wood_fence, piece_sharpstakes, piece_stakewall_blackwood,
-piece_dvergr_sharpstakes, piece_dvergr_stake_wall`.
+Everything except `Verbose` is in the `[Snapping]` section; `Verbose` is in `[Diagnostics]`.
 
-A value already written to the `.cfg` beats a new default in code. Change the `.cfg`, not
-the source.
+`FencePrefabs` defaults to `wood_fence, piece_sharpstakes, piece_stakewall_blackwood,
+piece_dvergr_sharpstakes, piece_dvergr_stake_wall`. Names that match no prefab are listed in
+the log at startup.
+
+BepInEx writes every setting to the `.cfg` on first run, and the saved value beats a new
+default in a later version. If a setting looks like it is being ignored, edit the `.cfg`.
+
+### PointOverrides
+
+One axis-aligned box cannot describe an L-shape or a piece whose geometry sits off centre.
+`piece_dvergr_sharpstakes` measures 2.40 x 1.70 x 3.94 centred 0.35 off in x, so the corners
+of its box are nowhere near the actual stakes. `PointOverrides` replaces the derived points
+with exact ones:
+
+```
+PointOverrides = piece_dvergr_sharpstakes: -0.5,0,2 | -0.5,0,-2 ; wooden_fence_1_gate: -2.4,0,0 | -2.4,1.17,0
+```
+
+Semicolons separate prefabs, a colon follows the prefab name, pipes separate points, and
+commas separate the three local coordinates of one point. Decimals must use a dot, because a
+comma already means something here.
+
+Naming a prefab is enough to get it snapped: it does not also have to be a container or a
+listed fence, and it skips the buildable filter. `Gap` and the fence ladder do not apply,
+since a point given by hand is used exactly as written. A malformed entry is reported in the
+log and dropped, and the rest of the config still loads.
+
+## Multiplayer
+
+Snap points are added to prefabs in your own game, nothing is sent over the network, and
+world data is unaffected. A player without Sinka sees the pieces exactly where you placed
+them, they just have more work to do lining up their own.
+
+Sinka does not register with Longhouse Core's version check, so nothing tells you when two
+players are running different builds of it. In practice that only shows up as one player
+finding a piece harder to align than the other did.
+
+## Compatibility
+
+Sinka skips any piece that already has snap points, so it will not fight another mod for the
+same prefab, but whichever one registers first wins and the order is not something you
+control. Do not run it alongside other mods that add snap points to prefabs:
+
+- **FenceSnap** by MSchmoecker
+- **ChestSnap** by Frogger
+- **Extra Snap Points Made Easy** by Searica
+
+Extra Snap Points Made Easy is much broader than this mod: manual point cycling with
+keybinds, grid snapping, and points derived per piece shape across beams, triangles,
+rectangles and roofs. If you want the whole toolbox rather than chests and fences that line
+up, use that instead.
+
+These work alongside Sinka, because they do not touch prefabs:
+
+- **Snap Points Made Easy** by MathiasDecrock cycles the points a piece already has, with
+  separate keys for the ghost's point and the target's. It adds none of its own, so Sinka
+  supplies the points and it picks between them.
+- **PrecisePlacement**, originally by Koosemose and re-uploaded by AcidWerks, now marked
+  deprecated. Free rotation, arrow-key nudging, and copying a targeted piece's rotation and
+  position onto the one you are holding.
+
+## Troubleshooting
+
+**A piece snaps at the wrong distance.** Set `Verbose = true` and restart. Every piece that
+gets points logs its measured footprint followed by the colliders it was measured from, so
+you can see which collider is inflating the box. If the box cannot describe the piece, give
+it exact points through `PointOverrides`.
+
+**A fence name in the config does nothing.** Check the startup log for a
+`FencePrefabs names that match no prefab` warning. The same check runs on `PointOverrides`.
+
+**A piece snaps while I place it, but nothing will snap to it afterwards.** The game finds
+nearby pieces with a search limited to the `piece` and `piece_nonsolid` layers, and a piece
+whose colliders sit elsewhere is invisible to it. Sinka lists these in one warning at
+startup. Rewriting another mod's or the game's colliders onto a different layer changes what
+they collide with, so Sinka reports it rather than fixing it.
+
+**"No piece tables found after 900 frames".** The buildable filter could not be built, so
+Sinka fell back to snapping anything with a `Piece` component, loot chests and pots
+included. Usually means another mod delayed or replaced ObjectDB.
+
+**Snap points did not appear at all.** They are added to prefabs when the scene loads, so
+a config change needs a restart to the main menu at minimum. Check the startup line reading
+`Added snap points to N piece(s)`.
+
+## Bug reports
+
+Post in the [Discord](https://discord.gg/hJzAVaZ5wb) or open an issue at
+[github.com/Ezomic/valheim-sinka](https://github.com/Ezomic/valheim-sinka). Useful to
+include:
+
+- `BepInEx\LogOutput.log`, ideally with `Verbose = true`.
+- Your `ezomic.valheim.sinka.cfg`.
+- The prefab name of the piece involved. The log lines from `Verbose` give you these.
+- Whether you were in single player or on a server, and any other snapping or building mods
+  installed.
+
+## Discord
+
+The [Discord](https://discord.gg/hJzAVaZ5wb) is where mod information, updates, support, bug
+reports and compatibility questions go.
+
+There's also a small EU server running the Longhouse pack if you want somewhere to play.
+Details are in the Discord.
+
+## Building
+
+```bash
+dotnet build
+```
+
+Targets net462 and references the game's managed DLLs from the default Steam path. Output
+deploys to the repo-local `testprofile\`; override with `-p:ProfileDir=...`, or build it into
+the shared play profile with `own-profile\build-all.ps1`.
 
 ## Design notes
 
 How the corner set is derived, why face centres were left out, what the measured footprint
-had to exclude, and why the one-way pieces are reported rather than fixed:
-[DESIGN.md](DESIGN.md).
+has to exclude, and why the one-way pieces are reported rather than fixed: [DESIGN.md](DESIGN.md).
+
+Credit where it is due: the fence ladder is MSchmoecker's idea, from FenceSnap. Sinka derives
+its rungs from the measured footprint instead of hand-placing them, which is how a modded
+fence gets the same treatment from one config entry. FenceSnap's hand-tuned numbers are also
+what caught a measuring bug here, since it puts `wood_fence` points at x = 1.0 where Sinka's
+inflated box said 1.36.
 
 ## Author
 
-Sinka is an original mod by **Robbin Thijssen** (Thijssen Software).
-Copyright (c) 2026 Robbin Thijssen. MIT licensed. See `LICENSE`.
+Sinka is an original mod by Robbin Thijssen (Thijssen Software). Copyright (c) 2026 Robbin
+Thijssen. MIT licensed, see `LICENSE`.
+
+## Part of Longhouse
+
+Sinka ships in the [Longhouse](https://thunderstore.io/c/valheim/p/Ezomic/Longhouse/) modpack,
+which pins the exact versions of the Ezomic mods used on the Ezomic setup. It behaves exactly
+the same installed on its own.
