@@ -93,22 +93,42 @@ to somebody else's content, and the piece belongs to whoever shipped it.
 ## Torches on poles
 
 Everything else here is a shape that pairs with whatever is nearby. A torch on a post is a
-pairing, and a plain snap point cannot give it two things.
+pairing, and a plain snap point cannot give it three things.
 
 **Reach.** `FindClosestSnapPoints` looks 0.5m from where the ghost already rests, and a torch
 aimed at a pole's top face rests on it. The wood torch is 1.41m long, with its pivot 0.65m
-above the tip of the shaft and its head in the top 5cm, measured off a rip. For 0.2m to show,
-its socket sits 0.56m above the pivot, and the snap has to slide the torch down that far plus
+above the tip of the shaft and its head in the top 5cm, measured off a rip. For 0.25m to show,
+its socket sits 0.51m above the pivot, and the snap has to slide the torch down that far plus
 however far below the pivot its collider reaches. The rip does not print the collider, so the
 distance is measured from the prefab at load, and a prefix on `FindClosestSnapPoints` raises
 the search radius to it for a torch ghost only.
 
-**Partners.** A wide radius on an ordinary point would drop a torch into the corner of any
-floor it came near. So a postfix on the static `Piece.GetSnapPoints`, whose only caller is that
-search, trims the candidates: a torch ghost sees only the highest snap point of each listed
-pole, and every other ghost sees no torch socket. The highest point rather than a name, so a
-pole of any length works. The reverse, a pole snapping its top onto a standing torch, is left
-out on purpose: bringing the pole's top down to the torch's head buries the pole.
+**Aim.** The search is a sphere, and the first build filtered it only by partner: a torch
+ghost saw the top point of every listed pole within reach. A review against the decompiled
+placement code showed that sphere, widened past a metre, pulled a torch set on a floor down
+through it when a pole stood under the floor's corner, jumped a torch on the ground two metres
+up into a nearby wall post, and picked the taller of two neighbouring posts over the one aimed
+at. So the catch is now the aim, not a distance. A postfix on `Player.PieceRayTest` notes when
+the placement ray is on a listed pole's top face: the hit piece is the pole, the normal faces
+up, and the hit is level with the pole's highest snap point. Only then is the radius widened,
+and a postfix on the static `Piece.GetSnapPoints`, whose only caller is the search, cuts the
+candidates down to that one point. The highest point rather than a name, so a pole of any
+length works. The side of a pole does not count: the torch has `m_notOnTiltingSurface`, and
+the game marks the ghost invalid from the same hit before any snapping, so a torch snapped
+from the side would look right and stay red.
+
+**Hiding the socket.** The keys that pick a snap point by hand put the chosen point on
+whatever the ray hit, so a socket visible on a torch aimed at a floor would bury it there.
+And a pole snapping its top onto a standing torch would bury the pole. So a postfix on the
+instance `Piece.GetSnapPoints` removes the socket from a torch's own list unless that torch
+is the ghost in hand and aimed at a pole top. That one list feeds the automatic snap, the
+manual keys, and every other ghost's search, so the socket is out of all three.
+
+**Fire.** A burning `Fireplace` sets alight what overlaps a capsule around its flame
+(`UpdateIgnite`), wherever `Cinder` lets fire spread, which is the Ashlands and the fire
+hazard world modifier. The wood torch's capsule bottoms out 0.60 above its pivot against a
+visible top of 0.76, so a torch showing less than about 0.16m has its own pole inside that
+capsule. `TorchStickOut` is floored at that plus 5cm, read off the prefab's own `Fireplace`.
 
 The vanilla search still picks the pair and moves the ghost, and holding the
 place-without-snapping key skips all of it.
@@ -127,8 +147,9 @@ place-without-snapping key skips all of it.
 5. **Read the startup log** for a `FencePrefabs names that match no prefab` warning. The
    default list is inferred from the asset manifest, so an entry may need correcting.
 6. **Torch on a pole.** Place a 1m wood pole, then aim a standing wood torch at its top. It
-   should drop into the pole, centred, with about 0.2m showing. Same on a 2m pole. Then put
-   a torch on a wood floor near a corner: it should not sink.
+   should drop into the pole, centred, with about 0.25m showing. Same on a 2m pole. Then
+   build a floor on poles and put a torch on the floor near a corner: it should not sink.
+   Aim a torch at the ground next to a pole, and at the side of a pole: no snap either way.
 7. **Tab** cycles snap points manually; the HUD names them, which is why they are named by
    position (`snap_top-front-left`) and a fence's rungs by height (`snap_left-y0.60`).
 8. Set `Verbose = true` once and read the measured footprints if a piece snaps at the wrong

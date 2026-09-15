@@ -110,10 +110,11 @@ namespace Sinka
             // to the top of a listed pole. See TorchPoles for why it cannot be a plain point
             // the way a chest corner is.
             SnapTorchesToPoles = config.Bind("Torches", "SnapTorchesToPoles", true,
-                "Place a torch from TorchPrefabs on top of a pole from PolePrefabs and it snaps "
+                "Aim a torch from TorchPrefabs at the top of a pole from PolePrefabs and it snaps "
                 + "down into the pole, centred, with only its head showing above the top. The "
-                + "torch snaps to nothing else, and nothing else snaps to the torch. Hold the "
-                + "place-without-snapping key to put a torch down freely near a pole.");
+                + "torch snaps only while aimed at a pole's top face, to that pole and nothing "
+                + "else, and nothing ever snaps to a torch. Hold the place-without-snapping key "
+                + "to set a torch on a pole top without sinking it.");
 
             TorchPrefabs = config.Bind("Torches", "TorchPrefabs", "piece_groundtorch_wood",
                 "Comma-separated prefab names of standing torches that snap into pole tops. "
@@ -126,11 +127,15 @@ namespace Sinka
                 + "game gave it points - the startup log names any listed pole that has none, "
                 + "or that is not in a build menu.");
 
-            TorchStickOut = config.Bind("Torches", "TorchStickOut", 0.2f,
+            TorchStickOut = config.Bind("Torches", "TorchStickOut", 0.25f,
                 "How far the top of a torch stands above the top of the pole it snaps into, in "
                 + "metres. The wood torch's head is its top 5cm and its flame sits above that, so "
-                + "0.2 shows the head and a hand's width of shaft. Larger shows more shaft; the "
-                + "torch is 1.41m long in all and cannot stick out further than that.");
+                + "0.25 shows the head and a hand's width of shaft. Larger shows more shaft; the "
+                + "torch is 1.41m long in all and cannot stick out further than that. There is a "
+                + "floor too, about 0.22 for the wood torch: any lower and the zone a burning "
+                + "torch spreads fire into reaches down into its own pole, which in the Ashlands "
+                + "burns the pole out from under it. A value under the floor is raised to it, "
+                + "with a warning in the log.");
 
             Verbose = config.Bind("Diagnostics", "Verbose", false,
                 "Log the measured footprint of every piece that gets snap points, and the "

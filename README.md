@@ -57,17 +57,23 @@ logs a warning saying where the ladder stopped.
 ### Torches on poles
 
 Aim a standing wood torch at the top of a 1m or 2m wood pole and it snaps down into the pole,
-centred on it, with the top `TorchStickOut` metres of the torch (0.2 by default) standing
+centred on it, with the top `TorchStickOut` metres of the torch (0.25 by default) standing
 above the pole. Build the pole first; the torch goes on afterwards.
 
-The torch snaps to pole tops and nothing else, and nothing snaps to the torch. A torch only
-ever gets this one point, so placing one on a floor or beside a wall behaves exactly as it
-does without Sinka. Hold the place-without-snapping key to put a torch down freely near a
-pole.
+The torch snaps only while the crosshair is on a listed pole's top face, and only into that
+pole. Aimed at anything else, a floor, a wall, the side of a pole, the ground beside one, a
+torch has no snap point at all and places exactly as it does without Sinka. Nothing ever
+snaps to a torch. Hold the place-without-snapping key to set a torch on a pole top without
+sinking it.
 
 The snap has to slide the torch down most of its own length, and the game only looks half a
-metre around the ghost for something to snap to. So for a torch, and only while its partner is
-a pole top, Sinka widens that search to the distance it measures off the torch at load.
+metre around the ghost for something to snap to. So for a torch aimed at a pole top, Sinka
+widens that search to the distance it measures off the torch at load.
+
+`TorchStickOut` has a floor, about 0.21 for the wood torch. A burning torch spreads fire into
+a zone around its flame, and sunk any deeper that zone reaches into its own pole, which in the
+Ashlands burns the pole out from under it. A lower value is raised to the floor with a warning
+in the log.
 
 ### Picking a snap point by hand
 
@@ -128,7 +134,7 @@ it. A dedicated server gains nothing from having it installed, and loses nothing
 | `SnapTorchesToPoles` | `true` | Snap the torches in `TorchPrefabs` into the tops of the poles in `PolePrefabs` |
 | `TorchPrefabs` | `piece_groundtorch_wood` | Comma-separated prefab names of torches that snap into poles |
 | `PolePrefabs` | `wood_pole, wood_pole2` | Comma-separated prefab names of poles a torch snaps into |
-| `TorchStickOut` | `0.2` | Metres of torch left standing above the pole's top |
+| `TorchStickOut` | `0.25` | Metres of torch left standing above the pole's top, never below the fire floor |
 | `Verbose` | `false` | Log the measured footprint of every piece that gets points, and the colliders behind it |
 
 The four torch settings are in the `[Torches]` section, `Verbose` is in `[Diagnostics]`, and

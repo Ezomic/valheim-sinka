@@ -7,13 +7,14 @@ and the mod uses [semantic versioning](https://semver.org).
 
 ### Added
 
-- **Torches on poles.** A standing wood torch placed on top of a wood pole snaps down into it,
-  centred, with its head standing `TorchStickOut` metres (0.2) above the pole. The torch
-  snaps to pole tops and nothing else, and nothing snaps to it, so a torch on a floor is
-  placed exactly as before. Because the snap slides the torch most of its own length, the
-  game's half-metre snap search is widened for a torch ghost to a reach measured off the
-  torch at load. New `[Torches]` section: `SnapTorchesToPoles`, `TorchPrefabs`,
-  `PolePrefabs`, `TorchStickOut`. Untested in game.
+- **Torches on poles.** A standing wood torch aimed at the top of a wood pole snaps down into
+  it, centred, with its top `TorchStickOut` metres (0.25) standing above the pole. The torch
+  snaps only while aimed at a pole's top face, and aimed anywhere else it has no snap point,
+  so a torch on a floor is placed exactly as before. Because the snap slides the torch most of
+  its own length, the game's half-metre snap search is widened for that one case to a reach
+  measured off the torch at load. `TorchStickOut` never goes below the point where the torch's
+  fire-spread zone would reach its own pole. New `[Torches]` section: `SnapTorchesToPoles`,
+  `TorchPrefabs`, `PolePrefabs`, `TorchStickOut`. Untested in game.
 
 ## [1.0.1] - 2026-09-12
 
