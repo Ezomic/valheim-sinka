@@ -14,7 +14,7 @@ and the mod uses [semantic versioning](https://semver.org).
   its own length, the game's half-metre snap search is widened for that one case to a reach
   measured off the torch at load. `TorchStickOut` never goes below the point where the torch's
   fire-spread zone would reach its own pole. New `[Torches]` section: `SnapTorchesToPoles`,
-  `TorchPrefabs`, `PolePrefabs`, `TorchStickOut`. Untested in game.
+  `TorchPrefabs`, `PolePrefabs`, `TorchStickOut`. Tested in game on 1m and 2m poles.
 
 ## [1.0.1] - 2026-09-12
 
