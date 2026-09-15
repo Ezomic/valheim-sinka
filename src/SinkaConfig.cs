@@ -30,6 +30,10 @@ namespace Sinka
         public static ConfigEntry<float> Gap;
         public static ConfigEntry<float> FenceLadderStep;
         public static ConfigEntry<float> FenceLadderBelow;
+        public static ConfigEntry<bool> SnapTorchesToPoles;
+        public static ConfigEntry<string> TorchPrefabs;
+        public static ConfigEntry<string> PolePrefabs;
+        public static ConfigEntry<float> TorchStickOut;
         public static ConfigEntry<bool> Verbose;
 
         public static void Bind(ConfigFile config)
@@ -101,6 +105,33 @@ namespace Sinka
                 "How far below its own base a fence's lowest rung sits, in metres. This "
                 + "is what lets the next panel step down rather than only up.");
 
+            // A torch on a post, rather than a torch on the ground. Unlike everything above,
+            // this is a pairing and not a shape: the torch gets one point, and it snaps only
+            // to the top of a listed pole. See TorchPoles for why it cannot be a plain point
+            // the way a chest corner is.
+            SnapTorchesToPoles = config.Bind("Torches", "SnapTorchesToPoles", true,
+                "Place a torch from TorchPrefabs on top of a pole from PolePrefabs and it snaps "
+                + "down into the pole, centred, with only its head showing above the top. The "
+                + "torch snaps to nothing else, and nothing else snaps to the torch. Hold the "
+                + "place-without-snapping key to put a torch down freely near a pole.");
+
+            TorchPrefabs = config.Bind("Torches", "TorchPrefabs", "piece_groundtorch_wood",
+                "Comma-separated prefab names of standing torches that snap into pole tops. "
+                + "Only the wood one by default. The iron standing torches have never been "
+                + "measured for this, so adding one is a look to check in game first.");
+
+            PolePrefabs = config.Bind("Torches", "PolePrefabs", "wood_pole, wood_pole2",
+                "Comma-separated prefab names of poles a torch snaps into. A pole's own highest "
+                + "snap point is the one used, so a pole of any length works as long as the "
+                + "game gave it points - the startup log names any listed pole that has none, "
+                + "or that is not in a build menu.");
+
+            TorchStickOut = config.Bind("Torches", "TorchStickOut", 0.2f,
+                "How far the top of a torch stands above the top of the pole it snaps into, in "
+                + "metres. The wood torch's head is its top 5cm and its flame sits above that, so "
+                + "0.2 shows the head and a hand's width of shaft. Larger shows more shaft; the "
+                + "torch is 1.41m long in all and cannot stick out further than that.");
+
             Verbose = config.Bind("Diagnostics", "Verbose", false,
                 "Log the measured footprint of every piece that gets snap points, and the "
                 + "colliders it was measured from.");
@@ -128,6 +159,31 @@ namespace Sinka
         {
             if (_fences == null) _fences = Split(FencePrefabs.Value);
             return _fences;
+        }
+
+        private static HashSet<string> _torches;
+        private static HashSet<string> _poles;
+
+        public static bool IsTorch(string prefabName)
+        {
+            return ConfiguredTorches().Contains(prefabName);
+        }
+
+        public static bool IsPole(string prefabName)
+        {
+            return ConfiguredPoles().Contains(prefabName);
+        }
+
+        public static HashSet<string> ConfiguredTorches()
+        {
+            if (_torches == null) _torches = Split(TorchPrefabs.Value);
+            return _torches;
+        }
+
+        public static HashSet<string> ConfiguredPoles()
+        {
+            if (_poles == null) _poles = Split(PolePrefabs.Value);
+            return _poles;
         }
 
         // ------------------------------------------------------------------ overrides

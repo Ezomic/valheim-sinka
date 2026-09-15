@@ -12,6 +12,8 @@ stayed so existing config files keep working.
 - Eight snap points, one on each corner of a piece's own measured footprint.
 - Fences and stake walls get a ladder of points up each end instead, so a fence line can
   follow sloping ground.
+- A standing wood torch placed on a wood pole snaps down into it, centred, with only its head
+  showing above the top.
 - Containers are matched by component, so modded chests are covered without naming them.
 - Fences are matched by a config list you can extend.
 - `PointOverrides` takes exact coordinates for a named prefab when the derived box is wrong.
@@ -52,13 +54,28 @@ of the piece is longer.
 The ladder is capped at 24 rungs per piece. A tall piece with a small step hits that cap and
 logs a warning saying where the ladder stopped.
 
+### Torches on poles
+
+Aim a standing wood torch at the top of a 1m or 2m wood pole and it snaps down into the pole,
+centred on it, with the top `TorchStickOut` metres of the torch (0.2 by default) standing
+above the pole. Build the pole first; the torch goes on afterwards.
+
+The torch snaps to pole tops and nothing else, and nothing snaps to the torch. A torch only
+ever gets this one point, so placing one on a floor or beside a wall behaves exactly as it
+does without Sinka. Hold the place-without-snapping key to put a torch down freely near a
+pole.
+
+The snap has to slide the torch down most of its own length, and the game only looks half a
+metre around the ghost for something to snap to. So for a torch, and only while its partner is
+a pole top, Sinka widens that search to the distance it measures off the torch at load.
+
 ### Picking a snap point by hand
 
 Q and E cycle the ghost's snap point while you are holding a piece (`TabLeft` / `TabRight`
 in the keybinds, so they follow a rebind), and the chosen point's name shows in the middle
 of the screen. Sinka names its points by position for that reason:
-`snap_top-front-left` for corners, `snap_left-y0.60` for a fence rung, `snap_custom1` for a
-point you supplied through `PointOverrides`.
+`snap_top-front-left` for corners, `snap_left-y0.60` for a fence rung, `snap_into-pole` for a
+torch, `snap_custom1` for a point you supplied through `PointOverrides`.
 
 ## What gets snapped
 
@@ -108,9 +125,14 @@ it. A dedicated server gains nothing from having it installed, and loses nothing
 | `Gap` | `0` | Metres left between two chained pieces. `0` is flush; negative values are ignored |
 | `FenceLadderStep` | `0.2` | Vertical spacing of a fence's rungs, in metres. `0` gives fences plain corners |
 | `FenceLadderBelow` | `0.2` | How far under its own base a fence's lowest rung sits, in metres |
+| `SnapTorchesToPoles` | `true` | Snap the torches in `TorchPrefabs` into the tops of the poles in `PolePrefabs` |
+| `TorchPrefabs` | `piece_groundtorch_wood` | Comma-separated prefab names of torches that snap into poles |
+| `PolePrefabs` | `wood_pole, wood_pole2` | Comma-separated prefab names of poles a torch snaps into |
+| `TorchStickOut` | `0.2` | Metres of torch left standing above the pole's top |
 | `Verbose` | `false` | Log the measured footprint of every piece that gets points, and the colliders behind it |
 
-Everything except `Verbose` is in the `[Snapping]` section; `Verbose` is in `[Diagnostics]`.
+The four torch settings are in the `[Torches]` section, `Verbose` is in `[Diagnostics]`, and
+everything else is in `[Snapping]`.
 
 `FencePrefabs` defaults to `wood_fence, piece_sharpstakes, piece_stakewall_blackwood,
 piece_dvergr_sharpstakes, piece_dvergr_stake_wall`. Names that match no prefab are listed in
@@ -181,7 +203,12 @@ you can see which collider is inflating the box. If the box cannot describe the 
 it exact points through `PointOverrides`.
 
 **A fence name in the config does nothing.** Check the startup log for a
-`FencePrefabs names that match no prefab` warning. The same check runs on `PointOverrides`.
+`FencePrefabs names that match no prefab` warning. The same check runs on `PointOverrides`,
+`TorchPrefabs` and `PolePrefabs`, and a listed pole with no snap points or no place in a build
+menu gets a warning of its own.
+
+**A torch will not snap into a pole.** The pole's name has to be in `PolePrefabs`. With
+`Verbose = true` the log names the torch's socket height and how far it reaches.
 
 **A piece snaps while I place it, but nothing will snap to it afterwards.** The game finds
 nearby pieces with a search limited to the `piece` and `piece_nonsolid` layers, and a piece

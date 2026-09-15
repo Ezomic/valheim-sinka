@@ -90,6 +90,29 @@ Sinka says so in the log and leaves it there. Both ChestSnap and FenceSnap carry
 changes what those colliders collide with. That is too large a side effect to apply silently
 to somebody else's content, and the piece belongs to whoever shipped it.
 
+## Torches on poles
+
+Everything else here is a shape that pairs with whatever is nearby. A torch on a post is a
+pairing, and a plain snap point cannot give it two things.
+
+**Reach.** `FindClosestSnapPoints` looks 0.5m from where the ghost already rests, and a torch
+aimed at a pole's top face rests on it. The wood torch is 1.41m long, with its pivot 0.65m
+above the tip of the shaft and its head in the top 5cm, measured off a rip. For 0.2m to show,
+its socket sits 0.56m above the pivot, and the snap has to slide the torch down that far plus
+however far below the pivot its collider reaches. The rip does not print the collider, so the
+distance is measured from the prefab at load, and a prefix on `FindClosestSnapPoints` raises
+the search radius to it for a torch ghost only.
+
+**Partners.** A wide radius on an ordinary point would drop a torch into the corner of any
+floor it came near. So a postfix on the static `Piece.GetSnapPoints`, whose only caller is that
+search, trims the candidates: a torch ghost sees only the highest snap point of each listed
+pole, and every other ghost sees no torch socket. The highest point rather than a name, so a
+pole of any length works. The reverse, a pole snapping its top onto a standing torch, is left
+out on purpose: bringing the pole's top down to the torch's head buries the pole.
+
+The vanilla search still picks the pair and moves the ghost, and holding the
+place-without-snapping key skips all of it.
+
 ## What to check
 
 1. Place a chest, then bring up a second. It should snap flush alongside, and stack when
@@ -103,7 +126,10 @@ to somebody else's content, and the piece belongs to whoever shipped it.
    coming from the damage states and the collider lines underneath it will say what it is.
 5. **Read the startup log** for a `FencePrefabs names that match no prefab` warning. The
    default list is inferred from the asset manifest, so an entry may need correcting.
-6. **Tab** cycles snap points manually; the HUD names them, which is why they are named by
+6. **Torch on a pole.** Place a 1m wood pole, then aim a standing wood torch at its top. It
+   should drop into the pole, centred, with about 0.2m showing. Same on a 2m pole. Then put
+   a torch on a wood floor near a corner: it should not sink.
+7. **Tab** cycles snap points manually; the HUD names them, which is why they are named by
    position (`snap_top-front-left`) and a fence's rungs by height (`snap_left-y0.60`).
-7. Set `Verbose = true` once and read the measured footprints if a piece snaps at the wrong
+8. Set `Verbose = true` once and read the measured footprints if a piece snaps at the wrong
    distance. Each footprint is now followed by the colliders it was measured from.

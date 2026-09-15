@@ -55,12 +55,27 @@ namespace Sinka
             var skipped = 0;
             var laddered = 0;
             var custom = 0;
+            var sockets = 0;
             var oneWay = new System.Collections.Generic.List<string>();
+
+            // The torch sockets are remembered per scene, like everything else here.
+            TorchPoles.Reset();
 
             foreach (var prefab in scene.m_prefabs)
             {
                 if (prefab == null) continue;
                 if (!Eligible(prefab)) continue;
+
+                var points = SinkaConfig.PointOverride(prefab.name);
+                var torch = points == null && TorchPoles.Wanted(prefab);
+
+                // A torch this mod already gave a socket to, in an earlier world of the same
+                // session. The point may outlive the scene, but the pairing rules and the
+                // reach live in TorchPoles and were just cleared - so it has to be registered
+                // again, or the socket stands there as a plain point that pairs with every
+                // floor corner. It cannot fall through to the check below, which would count
+                // it as somebody else's points and leave it unregistered.
+                if (torch && TorchPoles.Readopt(prefab)) { touched++; sockets++; continue; }
 
                 // Something already gave it snap points - vanilla, or another mod. Adding
                 // a second set on top would fight whatever placement it already has.
@@ -70,17 +85,18 @@ namespace Sinka
                 // chest its snap points, not every chest after it in the list.
                 try
                 {
-                    var points = SinkaConfig.PointOverride(prefab.name);
-                    var ladder = points == null && UseLadder(prefab);
+                    var ladder = points == null && !torch && UseLadder(prefab);
 
                     var added = points != null
                         ? AddExact(prefab, points)
+                        : torch ? TorchPoles.AddSocket(prefab)
                         : ladder ? AddLadder(prefab) : AddCorners(prefab);
 
                     if (added)
                     {
                         touched++;
                         if (points != null) custom++;
+                        else if (torch) sockets++;
                         else if (ladder) laddered++;
                     }
                 }
@@ -90,7 +106,9 @@ namespace Sinka
                         "Could not snap " + prefab.name + ": " + e.Message);
                 }
 
-                if (!ReachableAsTarget(prefab)) oneWay.Add(prefab.name);
+                // A torch is never a target - nothing is allowed to snap to its socket - so
+                // which layer its colliders sit on does not matter to it.
+                if (!torch && !ReachableAsTarget(prefab)) oneWay.Add(prefab.name);
             }
 
             if (oneWay.Count > 0)
@@ -105,9 +123,9 @@ namespace Sinka
             _appliedTo = scene;
             SinkaPlugin.Log.LogInfo(
                 "Added snap points to " + touched + " piece(s): " + laddered
-                + " fence ladder, " + custom + " from PointOverrides, "
-                + (touched - laddered - custom) + " corners. " + skipped
-                + " already had their own.");
+                + " fence ladder, " + custom + " from PointOverrides, " + sockets
+                + " torch socket, " + (touched - laddered - custom - sockets) + " corners. "
+                + skipped + " already had their own.");
 
             ReportMissingNames();
             return true;
@@ -187,6 +205,13 @@ namespace Sinka
                 Report("FencePrefabs", SinkaConfig.ConfiguredFences());
 
             Report("PointOverrides", SinkaConfig.ConfiguredOverrides());
+
+            if (SinkaConfig.SnapTorchesToPoles.Value)
+            {
+                Report("TorchPrefabs", SinkaConfig.ConfiguredTorches());
+                Report("PolePrefabs", SinkaConfig.ConfiguredPoles());
+                TorchPoles.ReportPoles();
+            }
         }
 
         private static void Report(string setting, System.Collections.Generic.IEnumerable<string> names)
@@ -243,6 +268,9 @@ namespace Sinka
                 return true;
 
             if (SinkaConfig.SnapFences.Value && SinkaConfig.IsFence(prefab.name))
+                return true;
+
+            if (TorchPoles.Wanted(prefab))
                 return true;
 
             return SinkaConfig.SnapUnsnappedPieces.Value;
@@ -396,7 +424,7 @@ namespace Sinka
             }
         }
 
-        private static void Create(GameObject prefab, string name, Vector3 localPosition)
+        internal static void Create(GameObject prefab, string name, Vector3 localPosition)
         {
             var point = new GameObject(name);
             point.tag = Tag;
@@ -415,7 +443,7 @@ namespace Sinka
         /// on inactive objects, so converting the corners by hand is safe where asking
         /// Unity for a world AABB is not.
         /// </summary>
-        private static bool Footprint(GameObject prefab, out Bounds bounds)
+        internal static bool Footprint(GameObject prefab, out Bounds bounds)
         {
             bounds = default;
             var found = false;
@@ -475,7 +503,7 @@ namespace Sinka
         /// without a WearNTear - and pieces whose m_new is the root itself - fall back to
         /// the whole prefab, which is what the old behaviour was for everything.
         /// </summary>
-        private static Transform LiveGeometry(GameObject prefab)
+        internal static Transform LiveGeometry(GameObject prefab)
         {
             var wear = prefab.GetComponent<WearNTear>();
             if (wear == null || wear.m_new == null || wear.m_new == prefab) return prefab.transform;
@@ -507,7 +535,7 @@ namespace Sinka
         /// is what the damage states are actually held behind, so ask that instead - all
         /// the way up to the root, since a whole disabled subtree only says so at its top.
         /// </summary>
-        private static bool IsDisabled(Transform transform, Transform root)
+        internal static bool IsDisabled(Transform transform, Transform root)
         {
             for (var current = transform; current != null && current != root; current = current.parent)
                 if (!current.gameObject.activeSelf) return true;
@@ -555,7 +583,7 @@ namespace Sinka
         /// Rewrites a child's local box into the root's space by carrying all eight corners
         /// across, so a rotated or scaled child still produces a box that contains it.
         /// </summary>
-        private static Bounds ToRoot(Transform root, Transform child, Bounds local)
+        internal static Bounds ToRoot(Transform root, Transform child, Bounds local)
         {
             var centre = local.center;
             var extents = local.extents;

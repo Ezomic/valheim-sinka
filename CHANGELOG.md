@@ -3,6 +3,18 @@
 Notable changes to Sinka. Format follows [Keep a Changelog](https://keepachangelog.com),
 and the mod uses [semantic versioning](https://semver.org).
 
+## [Unreleased]
+
+### Added
+
+- **Torches on poles.** A standing wood torch placed on top of a wood pole snaps down into it,
+  centred, with its head standing `TorchStickOut` metres (0.2) above the pole. The torch
+  snaps to pole tops and nothing else, and nothing snaps to it, so a torch on a floor is
+  placed exactly as before. Because the snap slides the torch most of its own length, the
+  game's half-metre snap search is widened for a torch ghost to a reach measured off the
+  torch at load. New `[Torches]` section: `SnapTorchesToPoles`, `TorchPrefabs`,
+  `PolePrefabs`, `TorchStickOut`. Untested in game.
+
 ## [1.0.1] - 2026-09-12
 
 ### Changed
