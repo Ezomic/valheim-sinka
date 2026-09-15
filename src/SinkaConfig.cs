@@ -132,7 +132,7 @@ namespace Sinka
                 + "metres. The wood torch's head is its top 5cm and its flame sits above that, so "
                 + "0.25 shows the head and a hand's width of shaft. Larger shows more shaft; the "
                 + "torch is 1.41m long in all and cannot stick out further than that. There is a "
-                + "floor too, about 0.22 for the wood torch: any lower and the zone a burning "
+                + "floor too, about 0.21 for the wood torch: any lower and the zone a burning "
                 + "torch spreads fire into reaches down into its own pole, which in the Ashlands "
                 + "burns the pole out from under it. A value under the floor is raised to it, "
                 + "with a warning in the log.");

@@ -135,8 +135,8 @@ namespace Sinka
 
             if (stickOut > wanted + 0.001f)
                 SinkaPlugin.Log.LogWarning(
-                    prefab.name + ": TorchStickOut " + wanted.ToString("F2") + " would put the "
-                    + "torch's fire-spread zone inside its own pole, so " + stickOut.ToString("F2")
+                    prefab.name + ": TorchStickOut " + wanted.ToString("F3") + " would put the "
+                    + "torch's fire-spread zone inside its own pole, so " + stickOut.ToString("F3")
                     + " is used. Below that the torch can set the pole alight in the Ashlands.");
 
             // The footprint's centre rather than the pivot: the colliders are the shaft, and
