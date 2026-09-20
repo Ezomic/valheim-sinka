@@ -318,10 +318,14 @@ namespace Sinka
                 Create(prefab, "snap_" + name, corner);
             }
 
+            // The gap is named even when it is the shared one, because "this piece got 0.30"
+            // is the answer you want when a gap you set looks like it did nothing, and the
+            // corner positions themselves never appear in the log.
             if (SinkaConfig.Verbose.Value)
                 SinkaPlugin.Log.LogInfo(
                     prefab.name + ": footprint " + bounds.size.ToString("F2")
-                    + " centred " + bounds.center.ToString("F2"));
+                    + " centred " + bounds.center.ToString("F2")
+                    + ", gap " + SinkaConfig.GapFor(prefab.name).ToString("F2"));
 
             return true;
         }
@@ -404,6 +408,7 @@ namespace Sinka
                 SinkaPlugin.Log.LogInfo(
                     prefab.name + ": footprint " + bounds.size.ToString("F2")
                     + " centred " + bounds.center.ToString("F2")
+                    + ", gap " + SinkaConfig.GapFor(prefab.name).ToString("F2")
                     + ", ladder of " + rungs + " along " + (alongX ? "x" : "z"));
 
             return true;
