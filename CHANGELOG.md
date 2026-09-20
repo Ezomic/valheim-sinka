@@ -60,7 +60,11 @@ and the mod uses [semantic versioning](https://semver.org).
 - **`GapOverrides`, `Gap` per prefab.** One number for everything made "chests flush" and
   "stakes a hand apart" the same decision. Same punctuation as `PointOverrides`, and a prefab
   with no entry still uses `Gap`. Two pieces of the same kind meet at exactly that gap; two
-  different kinds meet at the average of theirs, because each piece contributes half.
+  different kinds meet at the average of theirs, because each piece contributes half. Tested
+  in game at `piece_sharpstakes: 0.3`: stakes chain a hand apart while chests stay flush.
+- `Verbose` names the gap each piece got, including when it is the shared `Gap`. A gap that
+  looks like it did nothing had nothing to check against - the corner positions never appear
+  in the log, and the footprint line reads the same whatever the gap is.
 - The startup log now lists every socket and how far it ends up showing, which for a measured
   depth is written down nowhere else, and `GapOverrides` joins the names-that-match-no-prefab
   check.
