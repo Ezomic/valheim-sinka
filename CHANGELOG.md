@@ -58,6 +58,10 @@ and the mod uses [semantic versioning](https://semver.org).
 - A footprint that ends up measured from meshes now says so under `Verbose`. It printed
   nothing at all before, which is what made this take a rip to find: the log showed a wrong
   box with no collider lines above it and no explanation of where it came from.
+- Tested in game: `piece_sharpstakes` now measures 1.80 x 0.84 x 1.51 with a ladder of 6 along
+  x, and two panels chain end to end. `piece_dvergr_sharpstakes` moved from mesh guesswork to
+  its real collider box, 2.40 x 1.70 x 3.94 centred 0.35 off in x - the numbers this file has
+  quoted since 1.0.0 - and keeps its ladder along z, which is the axis it genuinely runs on.
 
 ### Changed
 
