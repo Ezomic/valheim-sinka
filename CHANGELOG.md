@@ -21,6 +21,10 @@ and the mod uses [semantic versioning](https://semver.org).
   rather than made to carry real support, so **a chest never becomes load-bearing** - a wall, a
   beam or a torch on a chest is still refused, which is vanilla's answer and not a limit of
   this. The integrity colours still paint a stacked chest as unsupported, which is cosmetic.
+- Tested in game: a chest places on top of another chest and sits there. The part that still
+  wants a deliberate look is the wear tick rather than the placement - leaving the area and
+  coming back is what proves `HaveSupport` is being answered, since that is the path that
+  would destroy the chest.
 - **On a server this can destroy a chest.** Support is worked out by whichever player's game
   owns the piece, and ownership follows whoever is nearby, so a player without Sinka finds a
   chest standing on nothing and destroys it with everything in it. Nothing client-side can
@@ -82,6 +86,14 @@ and the mod uses [semantic versioning](https://semver.org).
 - A footprint that ends up measured from meshes now says so under `Verbose`. It printed
   nothing at all before, which is what made this take a rip to find: the log showed a wrong
   box with no collider lines above it and no explanation of where it came from.
+- **Four pieces change how they chain**, because they were on that mesh fallback and are now
+  measured from their colliders, which is what this has always meant to do. Read off the game
+  at load: `piece_chest_blackmetal` 2.31 x 1.04 x 1.52 becomes 2.06 x 0.92 x 1.35,
+  `piece_chest_grausten` 1.72 x 1.18 x 1.22 becomes 1.31 x 0.72 x 1.13, `piece_chest_warderobe`
+  1.68 x 2.68 x 1.11 becomes 1.35 x 2.09 x 0.85, and `piece_sharpstakes` 2.40 x 1.56 x 2.67
+  becomes 1.80 x 0.84 x 1.51. Each chains tighter than it did in 1.1.0. `piece_chest`,
+  `piece_chest_wood`, `piece_chest_private` and `piece_chest_barrel` are untouched - they
+  already measured from colliders.
 - Tested in game: `piece_sharpstakes` now measures 1.80 x 0.84 x 1.51 with a ladder of 6 along
   x, and two panels chain end to end. `piece_dvergr_sharpstakes` moved from mesh guesswork to
   its real collider box, 2.40 x 1.70 x 3.94 centred 0.35 off in x - the numbers this file has
