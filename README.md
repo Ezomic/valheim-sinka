@@ -70,7 +70,8 @@ piece, piece : target, target : metres showing ; next entry
 
 Semicolons separate entries, colons separate an entry's three fields, commas separate names
 within a field. Out of the box that is the four standing torches and the mist demister, into
-ten poles from wood through to the Ashlands and the dvergr.
+the seven poles that exist and can be built: wood, core wood, darkwood and ashwood. The
+dvergr pole is a prefab you cannot place, so it is not among them.
 
 The torch snaps only while the crosshair is on the top face of a pole it is paired with, and
 only into that pole. Aimed at anything else, a floor, a wall, the side of a pole, the ground

@@ -14,8 +14,8 @@ and the mod uses [semantic versioning](https://semver.org).
   part that cannot be shared, since a torch's length and the height of its own fire are its
   own. They are left behind under `[Torches]` in a config file an older version wrote, where
   they do nothing.
-- **Every standing torch, into ten poles**, out of the box: the wood one, the three iron ones
-  and the mist demister, into wood, core wood, darkwood, ashwood and dvergr poles. 1.1.0
+- **Every standing torch, into seven poles**, out of the box: the wood one, the three iron ones
+  and the mist demister, into wood, core wood, darkwood and ashwood poles. 1.1.0
   shipped one torch and two poles. Only the wood torch and the two wood poles have been played;
   the rest of the names come off the game's asset manifest, which lists what is on disk rather
   than what the game loads, so one may resolve to nothing and be named in the log at startup.
@@ -37,6 +37,27 @@ and the mod uses [semantic versioning](https://semver.org).
 - The startup log now lists every socket and how far it ends up showing, which for a measured
   depth is written down nowhere else, and `GapOverrides` joins the names-that-match-no-prefab
   check.
+
+### Fixed
+
+- **Sharp stakes could not be chained at all**, and the reason was a footprint measured from
+  the wrong thing. `piece_sharpstakes` keeps its colliders as direct children of the root and
+  gives `New` nothing but an LODGroup and meshes, so the collider search - which starts at
+  `WearNTear.m_new` to keep damage states out - came away empty and fell through to mesh
+  bounds. Those include the stakes leaning out in +z, so the piece measured 2.67 deep against
+  2.40 wide. Deeper than it is wide means the ladder ran along z, which put its rungs on the
+  panel's front and back faces instead of its two ends, and no two panels could ever meet.
+  `piece_dvergr_sharpstakes` did the same at 3.81 deep.
+- The search now widens to the whole prefab before giving up on colliders, cutting out
+  `m_worn`, `m_broken` and `m_fragmentRoots` by asking `WearNTear` for them rather than by
+  where the search started. What makes that safe is a layer filter: only `piece` and
+  `piece_nonsolid`, the layers the game's own snap search looks on, so a hitbox, a pathfinding
+  blocker or an effect area cannot stand in for the piece. This piece's `HIT AREA` is an Aoe
+  box a metre and a half behind it and is exactly the collider that would have replaced one
+  wrong answer with another.
+- A footprint that ends up measured from meshes now says so under `Verbose`. It printed
+  nothing at all before, which is what made this take a rip to find: the log showed a wrong
+  box with no collider lines above it and no explanation of where it came from.
 
 ### Changed
 

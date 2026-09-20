@@ -22,15 +22,16 @@ namespace Sinka
 
         /// <summary>
         /// Every pole a torch can stand in, across the building tiers. Only the two wood ones
-        /// have been played; the rest are read off the game's asset manifest, which lists what
-        /// is on disk rather than what the game loads, so a name here may resolve to nothing.
-        /// That costs one line in the log at startup naming it, and nothing else - the same
-        /// arrangement FencePrefabs has had since the beginning.
+        /// have been played; the rest were read off the game's asset manifest and then checked
+        /// against a running game, which is the check that matters - the manifest lists what is
+        /// on disk rather than what the game loads. wood_logpole2 and wood_logpole4 came off it
+        /// and resolve to nothing, and piece_dvergr_pole resolves but is in no build menu, so a
+        /// player can never stand one up. All three are dropped rather than left to warn at
+        /// every startup.
         /// </summary>
         private const string DefaultPoles =
-            "wood_pole, wood_pole2, wood_pole_log, wood_logpole2, wood_logpole4, "
-            + "darkwood_pole, darkwood_pole4, ashwood_pole_1m, ashwood_pole_2m, "
-            + "piece_dvergr_pole";
+            "wood_pole, wood_pole2, wood_pole_log, "
+            + "darkwood_pole, darkwood_pole4, ashwood_pole_1m, ashwood_pole_2m";
 
         /// <summary>
         /// The wood torch keeps the 0.25 it was released with, since that is the one that has

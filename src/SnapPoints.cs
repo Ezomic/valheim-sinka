@@ -485,7 +485,47 @@ namespace Sinka
 
             if (found) return true;
 
-            // No usable collider: fall back to the mesh, which is also pure data.
+            // Nothing under m_new collides. That is not the same as "this piece has no
+            // colliders", and reading it that way is what broke the sharp stakes:
+            // piece_sharpstakes keeps `collider` and `collider (1)` as direct children of
+            // the root and gives New nothing but an LODGroup and meshes, so the search
+            // above came away empty and the mesh fallback measured the stakes leaning out
+            // in +z. That made the piece read as 2.67 deep against 2.40 wide, which is
+            // deeper than it is wide - so the ladder put its rungs on the front and back
+            // faces instead of the two ends, and no two panels could chain at all.
+            //
+            // So widen to the whole prefab before giving up on colliders, with the damage
+            // states cut out by hand rather than by where the search started. The layer
+            // filter is what makes that safe: piece and piece_nonsolid are the layers the
+            // game's own snap search looks on, so this measures the thing you can bump
+            // into and leaves out hitboxes, pathfinding blockers and effect areas - and
+            // this piece's HIT AREA, an Aoe box a metre and a half behind it, is exactly
+            // the kind of collider that would have replaced one wrong answer with another.
+            if (live != root)
+            {
+                foreach (var collider in prefab.GetComponentsInChildren<Collider>(true))
+                {
+                    if (Skip(collider, root)) continue;
+                    if ((PieceMask & (1 << collider.gameObject.layer)) == 0) continue;
+                    if (InDamageState(collider.transform, prefab)) continue;
+                    if (!LocalBounds(collider, out var local)) continue;
+
+                    var box = ToRoot(root, collider.transform, local);
+                    if (!found) { bounds = box; found = true; }
+                    else bounds.Encapsulate(box);
+
+                    if (SinkaConfig.Verbose.Value)
+                        SinkaPlugin.Log.LogInfo(
+                            "    (outside m_new) " + PathTo(collider.transform, root) + " "
+                            + box.size.ToString("F2"));
+                }
+
+                if (found) return true;
+            }
+
+            // No usable collider anywhere: fall back to the mesh, which is also pure data.
+            // Said out loud, because a box measured from meshes is the one most likely to
+            // be wrong and it used to arrive with no explanation at all.
             foreach (var filter in live.GetComponentsInChildren<MeshFilter>(true))
             {
                 if (filter.sharedMesh == null) continue;
@@ -496,7 +536,44 @@ namespace Sinka
                 else bounds.Encapsulate(box);
             }
 
+            if (found && SinkaConfig.Verbose.Value)
+                SinkaPlugin.Log.LogInfo(
+                    "    (no collider found; measured from meshes) " + prefab.name);
+
             return found;
+        }
+
+        /// <summary>
+        /// Whether this sits inside a damage state or a destruction chunk - the subtrees a
+        /// piece carries for later and is not wearing now.
+        ///
+        /// Asked of WearNTear's own fields rather than by name: m_worn and m_broken are
+        /// where the spare geometry lives, and m_fragmentRoots holds the pieces that fly
+        /// apart. Measuring those along with the real thing is what once made wood_fence
+        /// 2.72 x 2.30 x 0.85 against a panel of roughly 2.0 x 1.5.
+        /// </summary>
+        private static bool InDamageState(Transform transform, GameObject prefab)
+        {
+            var wear = prefab.GetComponent<WearNTear>();
+            if (wear == null) return false;
+
+            if (Under(transform, wear.m_worn) || Under(transform, wear.m_broken)) return true;
+
+            if (wear.m_fragmentRoots != null)
+                foreach (var fragment in wear.m_fragmentRoots)
+                    if (Under(transform, fragment)) return true;
+
+            return false;
+        }
+
+        private static bool Under(Transform transform, GameObject ancestor)
+        {
+            if (ancestor == null) return false;
+
+            for (var current = transform; current != null; current = current.parent)
+                if (current.gameObject == ancestor) return true;
+
+            return false;
         }
 
         /// <summary>

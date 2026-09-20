@@ -71,6 +71,23 @@ subtrees switched off via `activeSelf`, and skips colliders hanging off their ow
 the way `WearNTear.SetupColliders` does. `Verbose` now names every collider it measured
 from, which is how you find the culprit if a piece still snaps at the wrong distance.
 
+**Starting at `m_new` is not the same as the colliders being there**, and reading it that
+way cost the sharp stakes entirely. `piece_sharpstakes` keeps `collider` and `collider (1)`
+as direct children of the root and gives `New` nothing but an LODGroup and meshes, so the
+collider pass found nothing and the mesh fallback measured the stakes leaning out in +z:
+2.67 deep against 2.40 wide. Deeper than wide sends the ladder along z, which puts the rungs
+on the panel's front and back rather than its two ends, and two panels can then never meet.
+Nothing in the log said this had happened, because the fallback logged nothing.
+
+So there is a second collider pass now, over the whole prefab, before meshes are considered.
+The damage states are cut out by asking `WearNTear` for `m_worn`, `m_broken` and
+`m_fragmentRoots` rather than by where the search started, and the pass takes only colliders
+on **`piece` or `piece_nonsolid`** - the same layers the game's own snap search looks on. That
+filter is what makes a wider net safe: it measures the thing you can bump into and leaves out
+hitboxes, pathfinding blockers and effect areas. This piece has a `HIT AREA` carrying an `Aoe`
+a metre and a half behind it, which is precisely the collider that would otherwise have traded
+one wrong box for another.
+
 ## Pieces that only snap one way
 
 `FindClosestSnapPoints` reads the ghost's own points straight off the piece you are placing,
