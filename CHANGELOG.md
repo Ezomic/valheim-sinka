@@ -3,7 +3,7 @@
 Notable changes to Sinka. Format follows [Keep a Changelog](https://keepachangelog.com),
 and the mod uses [semantic versioning](https://semver.org).
 
-## [Unreleased]
+## [1.2.0] - 2026-09-20
 
 ### Added
 
