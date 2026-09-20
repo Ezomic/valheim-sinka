@@ -58,8 +58,10 @@ namespace Sinka
             var sockets = 0;
             var oneWay = new System.Collections.Generic.List<string>();
 
-            // The sockets are remembered per scene, like everything else here.
+            // The sockets are remembered per scene, like everything else here, and a borrowed
+            // support flag must not outlive the world it was borrowed in.
             SocketPoints.Reset();
+            Stacking.Reset();
 
             foreach (var prefab in scene.m_prefabs)
             {

@@ -7,6 +7,26 @@ and the mod uses [semantic versioning](https://semver.org).
 
 ### Added
 
+- **A chest can be set down on top of another chest** (`StackContainers`, on). Vanilla refuses
+  this outright and no snap point could ever have changed it, because two separate rules are in
+  the way. `Player.UpdatePlacementGhost` marks the ghost invalid whenever the piece you are
+  *aiming at* has `WearNTear.m_supports` off, which every chest does - the same reason a torch
+  cannot go on a chest. And `WearNTear.UpdateWear` runs
+  `if (m_noSupportWear) { UpdateSupport(); if (!HaveSupport()) num = 100f; }`, where 100 is the
+  whole of the piece's health: a chest that ends up unsupported is destroyed with its contents.
+  The field name reads backwards; it means "no support, wear".
+- Both are answered as narrowly as they can be. The support flag is lent to the chest you are
+  aiming at for exactly one frame, and only while another chest is in hand, so every other
+  placement test still runs unchanged. And a chest standing on a chest is counted as supported,
+  rather than made to carry real support, so **a chest never becomes load-bearing** - a wall, a
+  beam or a torch on a chest is still refused, which is vanilla's answer and not a limit of
+  this. The integrity colours still paint a stacked chest as unsupported, which is cosmetic.
+- **On a server this can destroy a chest.** Support is worked out by whichever player's game
+  owns the piece, and ownership follows whoever is nearby, so a player without Sinka finds a
+  chest standing on nothing and destroys it with everything in it. Nothing client-side can
+  prevent that. Safe in single player and on a server where everyone has the mod; on a mixed
+  server, turn it off. It ships on, with the warning next to the setting and in the README.
+
 - **`Sockets`: what sinks into what, and how much of it shows.** One entry per line of pieces,
   `piece, piece : target, target : metres showing`, and it replaces `SnapTorchesToPoles`,
   `TorchPrefabs`, `PolePrefabs` and `TorchStickOut`. Those four could describe exactly one

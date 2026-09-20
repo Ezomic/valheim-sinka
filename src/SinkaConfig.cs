@@ -66,6 +66,7 @@ namespace Sinka
         public static ConfigEntry<float> FenceLadderBelow;
         public static ConfigEntry<bool> SnapSockets;
         public static ConfigEntry<string> Sockets;
+        public static ConfigEntry<bool> StackContainers;
         public static ConfigEntry<bool> Verbose;
 
         public static void Bind(ConfigFile config)
@@ -185,6 +186,30 @@ namespace Sinka
                 + "# highest of them is what the piece lands on - which is why a pole of any\n"
                 + "# length is covered without naming its length. The startup log names any\n"
                 + "# target that has none, is in no build menu, or matches no prefab at all.");
+
+            // Not a snap point, and the only thing here that is not. Two vanilla rules refuse
+            // a chest on a chest - the placement test reads the *aimed* piece's m_supports,
+            // and the wear tick destroys a piece that ends up unsupported - so no arrangement
+            // of points could have done this. See Stacking for both, and for why each is
+            // answered as narrowly as it is.
+            StackContainers = config.Bind("Stacking", "StackContainers", true,
+                "Let a chest be placed on top of another chest, and stay there.\n"
+                + "# A chest holds up a chest and nothing else: a wall, a beam or a torch on a\n"
+                + "# chest is still refused, which is vanilla's answer rather than a limit of\n"
+                + "# this setting.\n"
+                + "#\n"
+                + "# ON A SERVER, READ THIS FIRST. Whether a piece is supported is worked out\n"
+                + "# by whichever player's game owns it, and ownership follows whoever is\n"
+                + "# nearby. A player who does not have Sinka works it out the vanilla way,\n"
+                + "# finds a chest standing on nothing, and DESTROYS IT WITH EVERYTHING IN IT.\n"
+                + "# There is no fix for that from here, because the rule runs on their\n"
+                + "# machine. A stack is safe in single player, and on a server where every\n"
+                + "# player has this mod - a modpack that carries it, for instance. On a server\n"
+                + "# where some players do not, turn this off and lose nothing but the feature.\n"
+                + "#\n"
+                + "# The build-integrity colours still show a stacked chest as unsupported.\n"
+                + "# That is only the colour: the chest is exempt from the wear that colour\n"
+                + "# usually warns about.");
 
             Verbose = config.Bind("Diagnostics", "Verbose", false,
                 "Log the measured footprint of every piece that gets snap points, and the "

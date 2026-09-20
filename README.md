@@ -17,6 +17,8 @@ stayed so existing config files keep working.
   still shows is measured off its own fire when you do not say.
 - `Gap` is per prefab where you want it to be, so chests can sit flush in the same world
   where stakes stand a hand apart.
+- A chest can be set down on top of another chest, which vanilla refuses outright. Read the
+  server warning under [Stacking chests](#stacking-chests) before using it on a server.
 - Containers are matched by component, so modded chests are covered without naming them.
 - Fences are matched by a config list you can extend.
 - `PointOverrides` takes exact coordinates for a named prefab when the derived box is wrong.
@@ -112,6 +114,38 @@ of the screen. Sinka names its points by position for that reason:
 `snap_top-front-left` for corners, `snap_left-y0.60` for a fence rung, `snap_into-pole` for a
 torch, `snap_custom1` for a point you supplied through `PointOverrides`.
 
+## Stacking chests
+
+Vanilla refuses a chest on a chest, and no snap point could ever have changed that. Two rules
+are in the way, both in the game's own code:
+
+- **Placing.** The placement ghost is invalid whenever the piece you are *aiming at* has
+  `WearNTear.m_supports` off. Every chest ships it off, which is the same reason a torch
+  cannot go on a chest either.
+- **Staying.** The wear tick reads `if (m_noSupportWear) { UpdateSupport(); if (!HaveSupport())
+  num = 100f; }`, and that 100 is the whole of the piece's health. A chest that ends up
+  unsupported is destroyed with everything inside it. Chests on the ground are safe because
+  terrain hands out full support.
+
+`StackContainers` answers both, and each as narrowly as it can be. The support flag is turned
+on for one frame on the chest you are aiming at, and only while another chest is in hand; and
+a chest standing on a chest is counted as supported so the wear tick leaves it alone. A chest
+does not become load-bearing: a wall, a beam or a torch on a chest is still refused.
+
+The build-integrity colours still show a stacked chest as unsupported. That is only the
+colour - the chest is exempt from the wear it usually warns about.
+
+### On a server, read this first
+
+Whether a piece is supported is worked out by whichever player's game owns it, and ownership
+follows whoever is nearby. **A player who does not have Sinka works it out the vanilla way,
+finds a chest standing on nothing, and destroys it with everything in it.**
+
+There is no fix for that from here, because the rule runs on their machine and from their copy
+of the prefab. A stack is safe in single player, and on a server where every player has this
+mod - through a modpack that carries it, for instance. On a server where some players do not,
+set `StackContainers = false` and you lose nothing but the feature.
+
 ## What gets snapped
 
 A piece has to be something you can actually build. The buildable set is read off the game's
@@ -163,10 +197,11 @@ it. A dedicated server gains nothing from having it installed, and loses nothing
 | `FenceLadderBelow` | `0.2` | How far under its own base a fence's lowest rung sits, in metres |
 | `SnapSockets` | `true` | Sink a piece listed in `Sockets` into the top of one of its targets |
 | `Sockets` | see below | What sinks into what, and how much of it shows |
+| `StackContainers` | `true` | Let a chest be placed on another chest, and stay there. Read the server warning |
 | `Verbose` | `false` | Log the measured footprint of every piece that gets points, and the colliders behind it |
 
-`SnapSockets` and `Sockets` are in the `[Sockets]` section, `Verbose` is in `[Diagnostics]`,
-and everything else is in `[Snapping]`.
+`SnapSockets` and `Sockets` are in the `[Sockets]` section, `StackContainers` in `[Stacking]`,
+`Verbose` in `[Diagnostics]`, and everything else in `[Snapping]`.
 
 `FencePrefabs` defaults to `wood_fence, piece_sharpstakes, piece_stakewall_blackwood,
 piece_dvergr_sharpstakes, piece_dvergr_stake_wall`. Names that match no prefab are listed in
@@ -236,6 +271,11 @@ log and dropped, and the rest of the config still loads.
 Snap points are added to prefabs in your own game, nothing is sent over the network, and
 world data is unaffected. A player without Sinka sees the pieces exactly where you placed
 them, they just have more work to do lining up their own.
+
+**`StackContainers` is the exception, and it is not a small one.** Support is worked out by
+whoever owns a piece, ownership follows whoever is nearby, and a player without Sinka
+destroys a stacked chest and its contents. See [Stacking chests](#stacking-chests). Everything
+else here stays entirely on your own machine.
 
 Sinka does not register with Longhouse Core's version check, so nothing tells you when two
 players are running different builds of it. In practice that only shows up as one player
