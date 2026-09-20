@@ -21,10 +21,10 @@ and the mod uses [semantic versioning](https://semver.org).
   rather than made to carry real support, so **a chest never becomes load-bearing** - a wall, a
   beam or a torch on a chest is still refused, which is vanilla's answer and not a limit of
   this. The integrity colours still paint a stacked chest as unsupported, which is cosmetic.
-- Tested in game: a chest places on top of another chest and sits there. The part that still
-  wants a deliberate look is the wear tick rather than the placement - leaving the area and
-  coming back is what proves `HaveSupport` is being answered, since that is the path that
-  would destroy the chest.
+- Tested in game, both halves: a chest places on top of another chest, and it is still there
+  with its contents after leaving the area and coming back. That second half is the one worth
+  proving - placement only needs the ghost to go green, while the wear tick is the path that
+  would have destroyed the chest.
 - **On a server this can destroy a chest.** Support is worked out by whichever player's game
   owns the piece, and ownership follows whoever is nearby, so a player without Sinka finds a
   chest standing on nothing and destroys it with everything in it. Nothing client-side can
