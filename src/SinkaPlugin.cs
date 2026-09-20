@@ -28,7 +28,7 @@ namespace Sinka
 
             _harmony = new Harmony(PluginGuid);
             _harmony.PatchAll(typeof(ScenePatches));
-            _harmony.PatchAll(typeof(TorchPoles));
+            _harmony.PatchAll(typeof(SocketPoints));
 
             Log.LogInfo(PluginName + " " + PluginVersion + " by " + PluginAuthor + " - ready.");
         }

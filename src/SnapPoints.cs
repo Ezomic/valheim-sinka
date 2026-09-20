@@ -58,8 +58,8 @@ namespace Sinka
             var sockets = 0;
             var oneWay = new System.Collections.Generic.List<string>();
 
-            // The torch sockets are remembered per scene, like everything else here.
-            TorchPoles.Reset();
+            // The sockets are remembered per scene, like everything else here.
+            SocketPoints.Reset();
 
             foreach (var prefab in scene.m_prefabs)
             {
@@ -67,15 +67,15 @@ namespace Sinka
                 if (!Eligible(prefab)) continue;
 
                 var points = SinkaConfig.PointOverride(prefab.name);
-                var torch = points == null && TorchPoles.Wanted(prefab);
+                var socket = points == null && SocketPoints.Wanted(prefab);
 
                 // A torch this mod already gave a socket to, in an earlier world of the same
                 // session. The point may outlive the scene, but the pairing rules and the
-                // reach live in TorchPoles and were just cleared - so it has to be registered
+                // reach live in SocketPoints and were just cleared - so it has to be registered
                 // again, or the socket stands there as a plain point that pairs with every
                 // floor corner. It cannot fall through to the check below, which would count
                 // it as somebody else's points and leave it unregistered.
-                if (torch && TorchPoles.Readopt(prefab)) { touched++; sockets++; continue; }
+                if (socket && SocketPoints.Readopt(prefab)) { touched++; sockets++; continue; }
 
                 // Something already gave it snap points - vanilla, or another mod. Adding
                 // a second set on top would fight whatever placement it already has.
@@ -85,18 +85,18 @@ namespace Sinka
                 // chest its snap points, not every chest after it in the list.
                 try
                 {
-                    var ladder = points == null && !torch && UseLadder(prefab);
+                    var ladder = points == null && !socket && UseLadder(prefab);
 
                     var added = points != null
                         ? AddExact(prefab, points)
-                        : torch ? TorchPoles.AddSocket(prefab)
+                        : socket ? SocketPoints.AddSocket(prefab)
                         : ladder ? AddLadder(prefab) : AddCorners(prefab);
 
                     if (added)
                     {
                         touched++;
                         if (points != null) custom++;
-                        else if (torch) sockets++;
+                        else if (socket) sockets++;
                         else if (ladder) laddered++;
                     }
                 }
@@ -108,7 +108,7 @@ namespace Sinka
 
                 // A torch is never a target - nothing is allowed to snap to its socket - so
                 // which layer its colliders sit on does not matter to it.
-                if (!torch && !ReachableAsTarget(prefab)) oneWay.Add(prefab.name);
+                if (!socket && !ReachableAsTarget(prefab)) oneWay.Add(prefab.name);
             }
 
             if (oneWay.Count > 0)
@@ -124,7 +124,7 @@ namespace Sinka
             SinkaPlugin.Log.LogInfo(
                 "Added snap points to " + touched + " piece(s): " + laddered
                 + " fence ladder, " + custom + " from PointOverrides, " + sockets
-                + " torch socket, " + (touched - laddered - custom - sockets) + " corners. "
+                + " socket, " + (touched - laddered - custom - sockets) + " corners. "
                 + skipped + " already had their own.");
 
             ReportMissingNames();
@@ -205,12 +205,13 @@ namespace Sinka
                 Report("FencePrefabs", SinkaConfig.ConfiguredFences());
 
             Report("PointOverrides", SinkaConfig.ConfiguredOverrides());
+            Report("GapOverrides", SinkaConfig.ConfiguredGaps());
 
-            if (SinkaConfig.SnapTorchesToPoles.Value)
+            if (SinkaConfig.SnapSockets.Value)
             {
-                Report("TorchPrefabs", SinkaConfig.ConfiguredTorches());
-                Report("PolePrefabs", SinkaConfig.ConfiguredPoles());
-                TorchPoles.ReportPoles();
+                Report("Sockets pieces", SinkaConfig.ConfiguredSockets());
+                Report("Sockets targets", SinkaConfig.ConfiguredTargets());
+                SocketPoints.ReportTargets();
             }
         }
 
@@ -270,7 +271,7 @@ namespace Sinka
             if (SinkaConfig.SnapFences.Value && SinkaConfig.IsFence(prefab.name))
                 return true;
 
-            if (TorchPoles.Wanted(prefab))
+            if (SocketPoints.Wanted(prefab))
                 return true;
 
             return SinkaConfig.SnapUnsnappedPieces.Value;
@@ -293,7 +294,11 @@ namespace Sinka
             // point ends up on chest B's left point, and each contributed half the space.
             // Hence Gap/2, and hence pushing the corners out rather than pulling them in -
             // insetting them would make the chests overlap by the same arithmetic.
-            var out2 = Mathf.Max(0f, SinkaConfig.Gap.Value) * 0.5f;
+            //
+            // Half from each piece also means two *different* pieces chained together meet at
+            // the average of their two gaps, which is the only sensible answer to a question
+            // per-prefab gaps make askable at all.
+            var out2 = Mathf.Max(0f, SinkaConfig.GapFor(prefab.name)) * 0.5f;
             var extents = bounds.extents + new Vector3(out2, out2, out2);
 
             foreach (var x in new[] { -1, 1 })
@@ -368,7 +373,7 @@ namespace Sinka
             // Same arithmetic as the corners: snapping makes the two points one point, so
             // each piece contributes half the gap.
             var reach = (alongX ? bounds.extents.x : bounds.extents.z)
-                        + Mathf.Max(0f, SinkaConfig.Gap.Value) * 0.5f;
+                        + Mathf.Max(0f, SinkaConfig.GapFor(prefab.name)) * 0.5f;
 
             var step = SinkaConfig.FenceLadderStep.Value;
             var bottom = bounds.min.y - Mathf.Max(0f, SinkaConfig.FenceLadderBelow.Value);

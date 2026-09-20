@@ -128,10 +128,37 @@ manual keys, and every other ghost's search, so the socket is out of all three.
 (`UpdateIgnite`), wherever `Cinder` lets fire spread, which is the Ashlands and the fire
 hazard world modifier. The wood torch's capsule bottoms out 0.60 above its pivot against a
 visible top of 0.76, so a torch showing less than about 0.16m has its own pole inside that
-capsule. `TorchStickOut` is floored at that plus 5cm, read off the prefab's own `Fireplace`.
+capsule. A depth is floored at that plus 5cm, read off the prefab's own `Fireplace`.
 
 The vanilla search still picks the pair and moves the ghost, and holding the
 place-without-snapping key skips all of it.
+
+### One list rather than four keys
+
+`SnapTorchesToPoles`, `TorchPrefabs`, `PolePrefabs` and `TorchStickOut` between them could
+describe exactly one pairing: every listed torch went into every listed pole at one shared
+depth. Depth is the part that cannot be shared. A torch's length and the height of its own
+fire are its own, so `TorchStickOut` was a number that could only ever be right for the one
+torch it was measured on - which is why the iron torches were never in the default list.
+`Sockets` is those four keys with the depth moved onto the entry.
+
+**A depth left out is measured, not defaulted.** The floor the fire gives is a real number
+per prefab: sink it that far and no further. On the wood torch that comes out at 0.21 against
+the 0.25 someone picked by eye for it, and two independent answers agreeing within a
+centimetre is the reason to let the other four torches measure rather than guessing four more
+numbers. A piece with no `Fireplace` has nothing to measure and borrows the wood torch's 0.25,
+because sinking it until nothing shows would be worse than being slightly wrong.
+
+## Gap per prefab
+
+One `Gap` made "chests flush" and "stakes a hand apart" the same decision. `GapOverrides` is
+per prefab with `Gap` as the fallback, and it shares `PointOverrides`' punctuation so the file
+has one syntax rather than two.
+
+The arithmetic is unchanged and it is what makes this answerable at all: each piece pushes its
+own corners out by half its gap, so two pieces of the same kind meet at exactly that gap, and
+two *different* kinds meet at the average of theirs. There is no other sensible answer to a
+question that only exists once the two ends can disagree.
 
 ## What to check
 

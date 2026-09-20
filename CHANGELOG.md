@@ -3,6 +3,46 @@
 Notable changes to Sinka. Format follows [Keep a Changelog](https://keepachangelog.com),
 and the mod uses [semantic versioning](https://semver.org).
 
+## [Unreleased]
+
+### Added
+
+- **`Sockets`: what sinks into what, and how much of it shows.** One entry per line of pieces,
+  `piece, piece : target, target : metres showing`, and it replaces `SnapTorchesToPoles`,
+  `TorchPrefabs`, `PolePrefabs` and `TorchStickOut`. Those four could describe exactly one
+  pairing - every listed torch into every listed pole at one shared depth - and depth is the
+  part that cannot be shared, since a torch's length and the height of its own fire are its
+  own. They are left behind under `[Torches]` in a config file an older version wrote, where
+  they do nothing.
+- **Every standing torch, into ten poles**, out of the box: the wood one, the three iron ones
+  and the mist demister, into wood, core wood, darkwood, ashwood and dvergr poles. 1.1.0
+  shipped one torch and two poles. Only the wood torch and the two wood poles have been played;
+  the rest of the names come off the game's asset manifest, which lists what is on disk rather
+  than what the game loads, so one may resolve to nothing and be named in the log at startup.
+- **A depth left out of an entry is measured off the piece**, not defaulted: as deep as it can
+  sink while the zone its fire spreads into stays clear of its own pole. That floor was already
+  being computed to catch a value set too low; it turns out to be the right number to use when
+  nobody has chosen one. On the wood torch it measures 0.21 against the 0.25 picked by eye, and
+  two independent answers agreeing within a centimetre is why the three iron torches are left
+  to measure - they come out at 0.32, clearing a bowl that sits 0.671 to 0.823 above the pivot.
+  A piece with no `Fireplace` borrows the wood torch's 0.25, which is why the mist demister is
+  typed at 0.27 instead: it has no fire to measure and its ball runs 0.283 to 0.515 under a
+  mesh top of 0.549.
+- **A pairing is now per entry.** A torch aimed at a pole somebody paired with a *different*
+  torch comes away with nothing, where one shared pole list could not tell the two apart.
+- **`GapOverrides`, `Gap` per prefab.** One number for everything made "chests flush" and
+  "stakes a hand apart" the same decision. Same punctuation as `PointOverrides`, and a prefab
+  with no entry still uses `Gap`. Two pieces of the same kind meet at exactly that gap; two
+  different kinds meet at the average of theirs, because each piece contributes half.
+- The startup log now lists every socket and how far it ends up showing, which for a measured
+  depth is written down nowhere else, and `GapOverrides` joins the names-that-match-no-prefab
+  check.
+
+### Changed
+
+- `TorchPoles` is now `SocketPoints`, since the mechanism is "a piece sinks into another
+  piece" and only the config names torches and poles. No behaviour rides on the rename.
+
 ## [1.1.0] - 2026-09-15
 
 ### Added

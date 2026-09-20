@@ -12,8 +12,11 @@ stayed so existing config files keep working.
 - Eight snap points, one on each corner of a piece's own measured footprint.
 - Fences and stake walls get a ladder of points up each end instead, so a fence line can
   follow sloping ground.
-- A standing wood torch placed on a wood pole snaps down into it, centred, with only its head
-  showing above the top.
+- A standing torch placed on a pole snaps down into it, centred, with only its head showing
+  above the top. Which torches and which poles is a config list, and how much of the torch
+  still shows is measured off its own fire when you do not say.
+- `Gap` is per prefab where you want it to be, so chests can sit flush in the same world
+  where stakes stand a hand apart.
 - Containers are matched by component, so modded chests are covered without naming them.
 - Fences are matched by a config list you can extend.
 - `PointOverrides` takes exact coordinates for a named prefab when the derived box is wrong.
@@ -56,24 +59,49 @@ logs a warning saying where the ladder stopped.
 
 ### Torches on poles
 
-Aim a standing wood torch at the top of a 1m or 2m wood pole and it snaps down into the pole,
-centred on it, with the top `TorchStickOut` metres of the torch (0.25 by default) standing
-above the pole. Build the pole first; the torch goes on afterwards.
+Aim a standing torch at the top of a pole and it snaps down into the pole, centred on it,
+with only its head standing above the top. Build the pole first; the torch goes on afterwards.
 
-The torch snaps only while the crosshair is on a listed pole's top face, and only into that
-pole. Aimed at anything else, a floor, a wall, the side of a pole, the ground beside one, a
-torch has no snap point at all and places exactly as it does without Sinka. Nothing ever
-snaps to a torch. Hold the place-without-snapping key to set a torch on a pole top without
-sinking it.
+What pairs with what is the `Sockets` setting, one entry per line of pieces:
+
+```
+piece, piece : target, target : metres showing ; next entry
+```
+
+Semicolons separate entries, colons separate an entry's three fields, commas separate names
+within a field. Out of the box that is the four standing torches and the mist demister, into
+ten poles from wood through to the Ashlands and the dvergr.
+
+The torch snaps only while the crosshair is on the top face of a pole it is paired with, and
+only into that pole. Aimed at anything else, a floor, a wall, the side of a pole, the ground
+beside one, a torch has no snap point at all and places exactly as it does without Sinka.
+Nothing ever snaps to a torch. Hold the place-without-snapping key to set a torch on a pole
+top without sinking it.
 
 The snap has to slide the torch down most of its own length, and the game only looks half a
 metre around the ghost for something to snap to. So for a torch aimed at a pole top, Sinka
 widens that search to the distance it measures off the torch at load.
 
-`TorchStickOut` has a floor, about 0.21 for the wood torch. A burning torch spreads fire into
-a zone around its flame, and sunk any deeper that zone reaches into its own pole, which in the
-Ashlands burns the pole out from under it. A lower value is raised to the floor with a warning
-in the log.
+**How much shows is optional, and better left out.** A burning torch spreads fire into a zone
+around its flame, and sunk deep enough that zone reaches into its own pole, which in the
+Ashlands burns the pole out from under it. That gives every torch a floor of its own, measured
+off its own fire, and an entry with no third field uses exactly that: as deep as this torch
+can go and no further. The wood torch measures 0.21 that way against the 0.25 chosen by eye
+for it, which is why the three iron ones are left to measure - they come out at 0.32, enough
+for the bowl and a little shaft. A typed value below the floor is raised to it with a warning
+in the log, and one past the torch's own length is capped, since a socket below its tip would
+leave it floating above the pole.
+
+The mist demister is typed at 0.27 instead, because it carries no fire to measure and its ball
+wants clearing whole.
+
+A target needs snap points of its own, because the highest of them is what the torch lands on.
+That is what covers a pole of any length without naming its length, and the startup log names
+any target that has none, is in no build menu, or matches no prefab at all.
+
+**Only the wood torch and the two wood poles have been played.** The other names come off the
+game's asset manifest, which lists what is on disk rather than what the game loads, so one may
+resolve to nothing - it is named in the log at startup if so, and costs nothing else.
 
 ### Picking a snap point by hand
 
@@ -129,16 +157,15 @@ it. A dedicated server gains nothing from having it installed, and loses nothing
 | `ExcludePrefabs` | empty | Comma-separated prefab names to leave alone, whatever else matches |
 | `PointOverrides` | empty | Exact points for named prefabs, replacing anything derived |
 | `Gap` | `0` | Metres left between two chained pieces. `0` is flush; negative values are ignored |
+| `GapOverrides` | empty | `Gap` for named prefabs, leaving the rest on `Gap` |
 | `FenceLadderStep` | `0.2` | Vertical spacing of a fence's rungs, in metres. `0` gives fences plain corners |
 | `FenceLadderBelow` | `0.2` | How far under its own base a fence's lowest rung sits, in metres |
-| `SnapTorchesToPoles` | `true` | Snap the torches in `TorchPrefabs` into the tops of the poles in `PolePrefabs` |
-| `TorchPrefabs` | `piece_groundtorch_wood` | Comma-separated prefab names of torches that snap into poles |
-| `PolePrefabs` | `wood_pole, wood_pole2` | Comma-separated prefab names of poles a torch snaps into |
-| `TorchStickOut` | `0.25` | Metres of torch left standing above the pole's top, never below the fire floor |
+| `SnapSockets` | `true` | Sink a piece listed in `Sockets` into the top of one of its targets |
+| `Sockets` | see below | What sinks into what, and how much of it shows |
 | `Verbose` | `false` | Log the measured footprint of every piece that gets points, and the colliders behind it |
 
-The four torch settings are in the `[Torches]` section, `Verbose` is in `[Diagnostics]`, and
-everything else is in `[Snapping]`.
+`SnapSockets` and `Sockets` are in the `[Sockets]` section, `Verbose` is in `[Diagnostics]`,
+and everything else is in `[Snapping]`.
 
 `FencePrefabs` defaults to `wood_fence, piece_sharpstakes, piece_stakewall_blackwood,
 piece_dvergr_sharpstakes, piece_dvergr_stake_wall`. Names that match no prefab are listed in
@@ -146,6 +173,42 @@ the log at startup.
 
 BepInEx writes every setting to the `.cfg` on first run, and the saved value beats a new
 default in a later version. If a setting looks like it is being ignored, edit the `.cfg`.
+
+**Upgrading from 1.1.0:** `Sockets` replaces `SnapTorchesToPoles`, `TorchPrefabs`,
+`PolePrefabs` and `TorchStickOut`. Those four are left behind under a `[Torches]` section in
+a config file an older version wrote, where they now do nothing. Deleting that section is
+tidiness rather than repair, and a torch depth you had tuned needs writing into the `Sockets`
+entry to keep it.
+
+### Sockets
+
+```
+Sockets = piece_groundtorch_wood : wood_pole, wood_pole2 : 0.25 ; piece_groundtorch, piece_groundtorch_blue : wood_pole
+```
+
+Semicolons separate entries, colons separate an entry's three fields, and commas separate
+names within a field. The third field is metres of the piece left showing above its target,
+and leaving it out measures the deepest this piece can sink without its own fire reaching the
+pole. Decimals must use a dot. A malformed entry is reported in the log and dropped, and the
+rest of the config still loads; a depth that does not parse costs only the depth, and that
+entry measures instead.
+
+Naming a piece twice is the later entry winning. See [Torches on poles](#torches-on-poles)
+for what the pairing actually does and what the defaults are.
+
+### GapOverrides
+
+```
+GapOverrides = piece_chest_wood: 0 ; piece_sharpstakes: 0.15
+```
+
+One `Gap` for everything makes "chests flush" and "stakes a hand apart" the same decision.
+Semicolons separate prefabs and a colon follows the name, as in `PointOverrides`. A prefab
+with no entry uses `Gap`, negative values are ignored, and a name that matches no prefab is
+reported in the log at startup.
+
+Because snapping makes two points coincide, each piece contributes half the space between
+them - so two *different* pieces chained together meet at the average of their two gaps.
 
 ### PointOverrides
 
@@ -210,11 +273,16 @@ it exact points through `PointOverrides`.
 
 **A fence name in the config does nothing.** Check the startup log for a
 `FencePrefabs names that match no prefab` warning. The same check runs on `PointOverrides`,
-`TorchPrefabs` and `PolePrefabs`, and a listed pole with no snap points or no place in a build
-menu gets a warning of its own.
+`GapOverrides` and both halves of `Sockets`, and a listed target with no snap points or no
+place in a build menu gets a warning of its own.
 
-**A torch will not snap into a pole.** The pole's name has to be in `PolePrefabs`. With
-`Verbose = true` the log names the torch's socket height and how far it reaches.
+**A torch will not snap into a pole.** The pole has to be a target of that torch's own
+`Sockets` entry - a pole paired with a different torch is not enough. The startup log lists
+every socket and how far it ends up showing; with `Verbose = true` it also names each socket's
+height and how far it reaches.
+
+**A torch sinks too far, or not far enough.** Give its entry a third field. With none, the
+depth is the deepest its own fire allows, which is the safe answer rather than the pretty one.
 
 **A piece snaps while I place it, but nothing will snap to it afterwards.** The game finds
 nearby pieces with a search limited to the `piece` and `piece_nonsolid` layers, and a piece

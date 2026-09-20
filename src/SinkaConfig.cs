@@ -20,6 +20,38 @@ namespace Sinka
             "wood_fence, piece_sharpstakes, piece_stakewall_blackwood, "
             + "piece_dvergr_sharpstakes, piece_dvergr_stake_wall";
 
+        /// <summary>
+        /// Every pole a torch can stand in, across the building tiers. Only the two wood ones
+        /// have been played; the rest are read off the game's asset manifest, which lists what
+        /// is on disk rather than what the game loads, so a name here may resolve to nothing.
+        /// That costs one line in the log at startup naming it, and nothing else - the same
+        /// arrangement FencePrefabs has had since the beginning.
+        /// </summary>
+        private const string DefaultPoles =
+            "wood_pole, wood_pole2, wood_pole_log, wood_logpole2, wood_logpole4, "
+            + "darkwood_pole, darkwood_pole4, ashwood_pole_1m, ashwood_pole_2m, "
+            + "piece_dvergr_pole";
+
+        /// <summary>
+        /// The wood torch keeps the 0.25 it was released with, since that is the one that has
+        /// been looked at in game. The three iron standing torches leave the depth out and get
+        /// one measured off their own fire, which is what a missing third field means: sink it
+        /// as far as it can go without its flame reaching down into the pole. That comes to
+        /// 0.32 for all three - their bowls sit between 0.671 and 0.823 above the pivot, so the
+        /// bowl clears the pole with a little shaft to spare. On the wood torch the same sum
+        /// gives 0.21 against the 0.25 picked by eye for it, and two answers agreeing within a
+        /// centimetre is the reason to trust it on a torch nobody has stood on a pole yet.
+        ///
+        /// The mist demister is the exception and is typed: it carries no Fireplace at all, so
+        /// there is no fire to measure. Its ball runs 0.283 to 0.515 under a mesh top of 0.549,
+        /// which puts the whole ball above the pole at 0.27.
+        /// </summary>
+        private const string DefaultSockets =
+            "piece_groundtorch_wood : " + DefaultPoles + " : 0.25 ; "
+            + "piece_groundtorch, piece_groundtorch_blue, piece_groundtorch_green : "
+            + DefaultPoles + " ; "
+            + "piece_groundtorch_mist : " + DefaultPoles + " : 0.27";
+
         public static ConfigEntry<bool> SnapContainers;
         public static ConfigEntry<bool> SnapFences;
         public static ConfigEntry<bool> SnapUnsnappedPieces;
@@ -28,12 +60,11 @@ namespace Sinka
         public static ConfigEntry<string> ExcludePrefabs;
         public static ConfigEntry<string> PointOverrides;
         public static ConfigEntry<float> Gap;
+        public static ConfigEntry<string> GapOverrides;
         public static ConfigEntry<float> FenceLadderStep;
         public static ConfigEntry<float> FenceLadderBelow;
-        public static ConfigEntry<bool> SnapTorchesToPoles;
-        public static ConfigEntry<string> TorchPrefabs;
-        public static ConfigEntry<string> PolePrefabs;
-        public static ConfigEntry<float> TorchStickOut;
+        public static ConfigEntry<bool> SnapSockets;
+        public static ConfigEntry<string> Sockets;
         public static ConfigEntry<bool> Verbose;
 
         public static void Bind(ConfigFile config)
@@ -89,6 +120,18 @@ namespace Sinka
                 "Metres of space left between two chained pieces. 0 places them flush. "
                 + "Negative values are ignored - overlapping pieces just clip.");
 
+            // One number for every piece means "chests flush" and "fences a hand apart" are
+            // the same decision, and they are not: a chest row wants no seam and a stake wall
+            // wants the stakes to read as separate. Same punctuation as PointOverrides, so
+            // there is one syntax in this file rather than two.
+            GapOverrides = config.Bind("Snapping", "GapOverrides", "",
+                "Gap for named prefabs, overriding Gap for those and leaving the rest alone.\n"
+                + "# Format:  prefab: metres ; other_prefab: metres\n"
+                + "# Semicolons separate prefabs and a colon follows the name. Decimals must\n"
+                + "# use a dot. Negative values are ignored, as with Gap, and a name that\n"
+                + "# matches no prefab is reported in the log at startup. Points given by hand\n"
+                + "# through PointOverrides are used exactly as written and take no gap at all.");
+
             // A fence follows the ground; a chest does not. Corners give a fence two
             // heights to attach at, its base and a full panel up, and neither is any use
             // for running a line up a hill - so a fence gets a ladder of points up each
@@ -107,35 +150,40 @@ namespace Sinka
 
             // A torch on a post, rather than a torch on the ground. Unlike everything above,
             // this is a pairing and not a shape: the torch gets one point, and it snaps only
-            // to the top of a listed pole. See TorchPoles for why it cannot be a plain point
-            // the way a chest corner is.
-            SnapTorchesToPoles = config.Bind("Torches", "SnapTorchesToPoles", true,
-                "Aim a torch from TorchPrefabs at the top of a pole from PolePrefabs and it snaps "
-                + "down into the pole, centred, with only its head showing above the top. The "
-                + "torch snaps only while aimed at a pole's top face, to that pole and nothing "
-                + "else, and nothing ever snaps to a torch. Hold the place-without-snapping key "
-                + "to set a torch on a pole top without sinking it.");
+            // to the top of a listed pole. See Sockets for why it cannot be a plain point the
+            // way a chest corner is.
+            //
+            // This replaced SnapTorchesToPoles, TorchPrefabs, PolePrefabs and TorchStickOut.
+            // Those three keys could describe exactly one pairing: every listed torch went
+            // into every listed pole at one shared depth, and the depth is the part that
+            // cannot be shared, since a torch's length and the height of its own fire are its
+            // own. Those four keys are left behind under [Torches] in a config file written by
+            // an older version, where they do nothing; deleting them is tidiness, not repair.
+            SnapSockets = config.Bind("Sockets", "SnapSockets", true,
+                "Aim a piece listed in Sockets at the top of one of its targets and it snaps "
+                + "down into it, centred, with only its head standing above the top - a torch "
+                + "on a post. It snaps only while aimed at the target's top face, to that one "
+                + "target and nothing else, and nothing ever snaps to the piece afterwards. "
+                + "Hold the place-without-snapping key to set a torch on a pole top without "
+                + "sinking it.");
 
-            TorchPrefabs = config.Bind("Torches", "TorchPrefabs", "piece_groundtorch_wood",
-                "Comma-separated prefab names of standing torches that snap into pole tops. "
-                + "Only the wood one by default. The iron standing torches have never been "
-                + "measured for this, so adding one is a look to check in game first.");
-
-            PolePrefabs = config.Bind("Torches", "PolePrefabs", "wood_pole, wood_pole2",
-                "Comma-separated prefab names of poles a torch snaps into. A pole's own highest "
-                + "snap point is the one used, so a pole of any length works as long as the "
-                + "game gave it points - the startup log names any listed pole that has none, "
-                + "or that is not in a build menu.");
-
-            TorchStickOut = config.Bind("Torches", "TorchStickOut", 0.25f,
-                "How far the top of a torch stands above the top of the pole it snaps into, in "
-                + "metres. The wood torch's head is its top 5cm and its flame sits above that, so "
-                + "0.25 shows the head and a hand's width of shaft. Larger shows more shaft; the "
-                + "torch is 1.41m long in all and cannot stick out further than that. There is a "
-                + "floor too, about 0.21 for the wood torch: any lower and the zone a burning "
-                + "torch spreads fire into reaches down into its own pole, which in the Ashlands "
-                + "burns the pole out from under it. A value under the floor is raised to it, "
-                + "with a warning in the log.");
+            Sockets = config.Bind("Sockets", "Sockets", DefaultSockets,
+                "What sinks into what, and how much of it still shows. Format:\n"
+                + "#   piece, piece : target, target : metres showing ; next entry\n"
+                + "# Semicolons separate entries, colons separate an entry's three fields, and\n"
+                + "# commas separate names within a field. Decimals must use a dot.\n"
+                + "#\n"
+                + "# The third field is optional. Left out, the depth is measured off the piece\n"
+                + "# itself: as deep as it can sink while the zone a burning torch spreads fire\n"
+                + "# into stays clear of its own pole, which in the Ashlands is what stops the\n"
+                + "# pole burning out from under it. A typed value below that floor is raised to\n"
+                + "# it with a warning, and one past the piece's own length is capped, since a\n"
+                + "# socket below its tip would leave it floating above the pole instead.\n"
+                + "#\n"
+                + "# A target needs snap points of its own for any of this to work, because the\n"
+                + "# highest of them is what the piece lands on - which is why a pole of any\n"
+                + "# length is covered without naming its length. The startup log names any\n"
+                + "# target that has none, is in no build menu, or matches no prefab at all.");
 
             Verbose = config.Bind("Diagnostics", "Verbose", false,
                 "Log the measured footprint of every piece that gets snap points, and the "
@@ -166,29 +214,172 @@ namespace Sinka
             return _fences;
         }
 
-        private static HashSet<string> _torches;
-        private static HashSet<string> _poles;
+        // ------------------------------------------------------------------ sockets
 
-        public static bool IsTorch(string prefabName)
+        /// <summary>
+        /// One entry of Sockets, as it applies to one piece: what that piece may sink into,
+        /// and how much of it is left showing.
+        /// </summary>
+        internal sealed class Socket
         {
-            return ConfiguredTorches().Contains(prefabName);
+            internal HashSet<string> Targets;
+
+            /// <summary>
+            /// Metres left standing above the target, or Measured when the entry left the
+            /// field out and the piece's own fire decides instead.
+            /// </summary>
+            internal float StickOut;
         }
 
-        public static bool IsPole(string prefabName)
+        /// <summary>A stick-out to measure off the prefab rather than take from config.</summary>
+        internal const float Measured = -1f;
+
+        private static Dictionary<string, Socket> _sockets;
+        private static HashSet<string> _targets;
+
+        public static Socket SocketFor(string prefabName)
         {
-            return ConfiguredPoles().Contains(prefabName);
+            Socket socket;
+            return ParsedSockets().TryGetValue(prefabName, out socket) ? socket : null;
         }
 
-        public static HashSet<string> ConfiguredTorches()
+        /// <summary>
+        /// Whether anything at all sinks into this piece. The aim check runs on every
+        /// placement ray, before the ghost in hand is known, so it asks the cheap question
+        /// first and leaves "may *this* piece sink into it" to the search itself.
+        /// </summary>
+        public static bool IsSocketTarget(string prefabName)
         {
-            if (_torches == null) _torches = Split(TorchPrefabs.Value);
-            return _torches;
+            return ConfiguredTargets().Contains(prefabName);
         }
 
-        public static HashSet<string> ConfiguredPoles()
+        /// <summary>Named pieces, so startup can report the ones that resolve to nothing.</summary>
+        public static IEnumerable<string> ConfiguredSockets()
         {
-            if (_poles == null) _poles = Split(PolePrefabs.Value);
-            return _poles;
+            return ParsedSockets().Keys;
+        }
+
+        public static HashSet<string> ConfiguredTargets()
+        {
+            if (_targets != null) return _targets;
+
+            _targets = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var socket in ParsedSockets().Values)
+                foreach (var target in socket.Targets)
+                    _targets.Add(target);
+
+            return _targets;
+        }
+
+        /// <summary>
+        /// Parsed once and kept, keyed by the piece that sinks - one entry may name several,
+        /// and they each get their own copy of the rule. Naming a piece twice is the later
+        /// entry winning, which is the same rule a config file has everywhere else.
+        ///
+        /// A malformed entry is reported and dropped rather than throwing, like
+        /// PointOverrides: getting one pairing wrong should cost that pairing, not the mod.
+        /// </summary>
+        private static Dictionary<string, Socket> ParsedSockets()
+        {
+            if (_sockets != null) return _sockets;
+
+            _sockets = new Dictionary<string, Socket>(StringComparer.OrdinalIgnoreCase);
+            if (string.IsNullOrEmpty(Sockets.Value)) return _sockets;
+
+            foreach (var entry in Sockets.Value.Split(';'))
+            {
+                var text = entry.Trim();
+                if (text.Length == 0) continue;
+
+                var fields = text.Split(':');
+                if (fields.Length < 2 || fields.Length > 3)
+                {
+                    Warn("Sockets entry is not 'piece : target : metres' and was ignored: " + text);
+                    continue;
+                }
+
+                var names = Split(fields[0]);
+                var targets = Split(fields[1]);
+
+                if (names.Count == 0 || targets.Count == 0)
+                {
+                    Warn("Sockets entry names no piece or no target and was ignored: " + text);
+                    continue;
+                }
+
+                var stickOut = Measured;
+
+                if (fields.Length == 3 && fields[2].Trim().Length > 0
+                    && !float.TryParse(fields[2].Trim(), NumberStyles.Float,
+                        CultureInfo.InvariantCulture, out stickOut))
+                {
+                    // The pairing is still usable without it, and measuring is what the field
+                    // being absent already means, so this costs a typed depth rather than the
+                    // whole entry.
+                    Warn("Sockets: " + fields[0].Trim() + " has a depth that does not parse as "
+                         + "a number, so it is measured off the piece instead: " + fields[2].Trim());
+                    stickOut = Measured;
+                }
+
+                foreach (var name in names)
+                    _sockets[name] = new Socket { Targets = targets, StickOut = stickOut };
+            }
+
+            return _sockets;
+        }
+
+        // ------------------------------------------------------------------ gap
+
+        private static Dictionary<string, float> _gaps;
+
+        /// <summary>The gap for one prefab: its own if it has one, otherwise the shared Gap.</summary>
+        public static float GapFor(string prefabName)
+        {
+            float gap;
+            return Gaps().TryGetValue(prefabName, out gap) ? gap : Gap.Value;
+        }
+
+        /// <summary>Named prefabs, so startup can report the ones that resolve to nothing.</summary>
+        public static IEnumerable<string> ConfiguredGaps()
+        {
+            return Gaps().Keys;
+        }
+
+        private static Dictionary<string, float> Gaps()
+        {
+            if (_gaps != null) return _gaps;
+
+            _gaps = new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase);
+            if (string.IsNullOrEmpty(GapOverrides.Value)) return _gaps;
+
+            foreach (var entry in GapOverrides.Value.Split(';'))
+            {
+                var text = entry.Trim();
+                if (text.Length == 0) continue;
+
+                var colon = text.IndexOf(':');
+                if (colon <= 0)
+                {
+                    Warn("GapOverrides entry has no 'prefab:' part and was ignored: " + text);
+                    continue;
+                }
+
+                var name = text.Substring(0, colon).Trim();
+
+                float gap;
+                if (name.Length == 0
+                    || !float.TryParse(text.Substring(colon + 1).Trim(), NumberStyles.Float,
+                        CultureInfo.InvariantCulture, out gap))
+                {
+                    Warn("GapOverrides: " + name + " has a gap that does not parse as a number "
+                         + "and was ignored: " + text);
+                    continue;
+                }
+
+                _gaps[name] = gap;
+            }
+
+            return _gaps;
         }
 
         // ------------------------------------------------------------------ overrides

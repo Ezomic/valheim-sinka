@@ -6,8 +6,9 @@ using UnityEngine;
 namespace Sinka
 {
     /// <summary>
-    /// A standing torch aimed at the top of a pole snaps down into it, centred on the pole, with
-    /// only its head standing above the top: a torch on a post.
+    /// A piece aimed at the top of another sinks down into it, centred, with only its head
+    /// standing above the top: a torch on a post. What pairs with what is the Sockets setting,
+    /// and the torches and poles it names are the only pairing this has been built for so far.
     ///
     /// Everything else in this mod is a shape - corners, rungs - that pairs with whatever is
     /// nearby. This is a pairing, and a plain snap point cannot give it three things.
@@ -27,22 +28,22 @@ namespace Sinka
     /// the ground two metres up into a nearby wall post, and picked the taller of two neighbouring
     /// posts over the one aimed at. A review against the decompiled placement code found all
     /// three before it was ever played. So the catch is no longer a distance at all: the placement
-    /// ray has to have hit the top face of a listed pole, and that pole's top point is then the
-    /// only thing the torch is offered. Aimed anywhere else, the torch has no snap point.
+    /// ray has to have hit the top face of a target this piece is paired with, and that target's
+    /// top point is then the only thing it is offered. Aimed anywhere else, it has no snap point.
     ///
     /// **Hiding the socket.** That last part matters for more than the automatic snap. The keys
     /// that pick a snap point by hand put the chosen point on whatever the ray hit, so a socket
     /// left visible on a torch aimed at a floor would bury it there with its head at ankle height.
     /// And a pole snapping its top onto a standing torch would bury the pole to bring its top down
-    /// to the torch's head. So the socket exists, as far as the game can tell, only on a torch
-    /// ghost aimed at a pole top, and never on a torch already standing.
+    /// to the torch's head. So the socket exists, as far as the game can tell, only on a ghost
+    /// aimed at one of its own targets, and never on a torch already standing.
     ///
     /// All of it rides the vanilla search rather than replacing it: the game still gathers the
     /// points, picks the pair and moves the ghost, and these patches only change the radius and
     /// what is on the lists. Holding the place-without-snapping key skips the search, and so all
     /// of this, exactly as it skips every other snap.
     /// </summary>
-    internal static class TorchPoles
+    internal static class SocketPoints
     {
         /// <summary>The game prints this in the middle of the screen when the point is picked by hand.</summary>
         internal const string SocketName = "snap_into-pole";
@@ -52,16 +53,16 @@ namespace Sinka
         /// <summary>
         /// Added to the socket's height to make the search radius, so aiming anywhere on a pole's
         /// top face still reaches its centre point. The wood pole's mesh is 0.40m square, which
-        /// puts the corner of its top face 0.28m from the middle. Only the aimed pole's top is
+        /// puts the corner of its top face 0.28m from the middle. Only the aimed target's top is
         /// ever a candidate, so a generous number here cannot catch anything else.
         /// </summary>
         private const float FaceSlack = 0.3f;
 
-        /// <summary>The game's own radius, which a torch's reach never drops below.</summary>
+        /// <summary>The game's own radius, which a socket's reach never drops below.</summary>
         private const float VanillaReach = 0.5f;
 
         /// <summary>
-        /// A hit this far below or above the pole's top point still counts as its top face. The
+        /// A hit this far below or above the target's top point still counts as its top face. The
         /// face and the point are the same height on a vanilla pole; this is only room for a mesh
         /// that bevels its top.
         /// </summary>
@@ -74,25 +75,47 @@ namespace Sinka
         private const float IgniteMargin = 0.05f;
 
         /// <summary>
-        /// Search radius per torch prefab, by name, since the placement ghost is named after its
+        /// What a piece with no fire at all shows when its entry gives no depth. Nothing can be
+        /// measured on such a piece, and sinking it until nothing shows would be worse than
+        /// borrowing the number the wood torch was released with.
+        /// </summary>
+        private const float DefaultStickOut = 0.25f;
+
+        /// <summary>
+        /// Search radius per socket prefab, by name, since the placement ghost is named after its
         /// prefab. Cleared per scene with the rest of the mod's work, and rebuilt by Apply.
         /// </summary>
         private static readonly Dictionary<string, float> Reach =
             new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
-        /// Piece.m_name of every torch carrying a socket. The per-piece snap point postfix runs
+        /// How much of each socket piece ends up showing, for one line in the log. A depth the
+        /// entry left out is measured off the piece, so this is the only place it is written
+        /// down at all.
+        /// </summary>
+        private static readonly List<string> Depths = new List<string>();
+
+        /// <summary>
+        /// Piece.m_name of every piece carrying a socket. The per-piece snap point postfix runs
         /// for every piece within 10m of a held ghost, every frame, and m_name is a plain field -
         /// asking a GameObject its name allocates a new string each time.
         /// </summary>
-        private static readonly HashSet<string> TorchPieceNames = new HashSet<string>(StringComparer.Ordinal);
+        private static readonly HashSet<string> SocketPieceNames = new HashSet<string>(StringComparer.Ordinal);
 
         /// <summary>
-        /// The top point of the listed pole the placement ray hit this frame, or null. Set by the
+        /// The top point of the target the placement ray hit this frame, or null. Set by the
         /// PieceRayTest postfix, which UpdatePlacementGhost calls before it gathers either list of
         /// snap points, so both lists in a frame are built from the same answer.
         /// </summary>
         private static Transform _aimedTop;
+
+        /// <summary>
+        /// The prefab name of that target. The aim test runs before the ghost is known and asks
+        /// only whether anything sinks into this piece; whether the piece *in hand* does is this
+        /// name against that piece's own target list, and the two are no longer the same question
+        /// now that a pairing is per entry.
+        /// </summary>
+        private static string _aimedTarget;
 
         /// <summary>
         /// The ghost the current search is for. The static Piece.GetSnapPoints that gathers the
@@ -106,45 +129,61 @@ namespace Sinka
         internal static void Reset()
         {
             Reach.Clear();
-            TorchPieceNames.Clear();
+            Depths.Clear();
+            SocketPieceNames.Clear();
             _aimedTop = null;
+            _aimedTarget = null;
         }
 
         internal static bool Wanted(GameObject prefab)
         {
-            return SinkaConfig.SnapTorchesToPoles.Value && SinkaConfig.IsTorch(prefab.name);
+            return SinkaConfig.SnapSockets.Value && SinkaConfig.SocketFor(prefab.name) != null;
         }
 
         /// <summary>
-        /// The socket sits on the torch's own axis, TorchStickOut below the top of what you can
-        /// see, so a socket laid on a pole's top point leaves exactly that much standing out.
+        /// The socket sits on the piece's own axis, its stick-out below the top of what you can
+        /// see, so a socket laid on a target's top point leaves exactly that much standing out.
         /// </summary>
         internal static bool AddSocket(GameObject prefab)
         {
             if (!SnapPoints.Footprint(prefab, out var footprint)) return false;
 
+            var socket = SinkaConfig.SocketFor(prefab.name);
+            if (socket == null) return false;
+
             var visual = Visual(prefab, footprint);
-            var wanted = SinkaConfig.TorchStickOut.Value;
             var floor = StickOutFloor(prefab, visual);
 
-            // Past the torch's own length the socket would sit below its tip, and the torch
-            // would float above the pole instead of standing in it. That ceiling wins over the
-            // fire floor: a torch too short to clear its own fire zone is a modded torch nobody
-            // measured, and floating it would be worse.
+            // A depth left out of the entry is measured rather than guessed: sink it as far as
+            // its own fire allows and no further. On the wood torch that comes out at 0.21
+            // against the 0.25 chosen by eye for it, which is the reason to trust it on a torch
+            // nobody has stood on a pole yet. A piece with no fire has nothing to measure, so it
+            // borrows the wood torch's number.
+            var typed = socket.StickOut >= 0f;
+            var wanted = typed ? socket.StickOut : (floor > 0f ? floor : DefaultStickOut);
+
+            // Past the piece's own length the socket would sit below its tip, and it would float
+            // above the target instead of standing in it. That ceiling wins over the fire floor:
+            // a torch too short to clear its own fire zone is a modded torch nobody measured,
+            // and floating it would be worse.
             var stickOut = Mathf.Min(Mathf.Max(wanted, floor, 0f), visual.size.y);
 
-            if (stickOut > wanted + 0.001f)
+            // Only worth saying when a typed number was overruled. A measured one is already
+            // the floor, so it can only be raised by rounding.
+            if (typed && stickOut > wanted + 0.001f)
                 SinkaPlugin.Log.LogWarning(
-                    prefab.name + ": TorchStickOut " + wanted.ToString("F3") + " would put the "
-                    + "torch's fire-spread zone inside its own pole, so " + stickOut.ToString("F3")
-                    + " is used. Below that the torch can set the pole alight in the Ashlands.");
+                    prefab.name + ": a depth of " + wanted.ToString("F3") + " would put the "
+                    + "piece's fire-spread zone inside its own pole, so " + stickOut.ToString("F3")
+                    + " is used. Below that a torch can set the pole alight in the Ashlands.");
 
             // The footprint's centre rather than the pivot: the colliders are the shaft, and
-            // centred means the shaft on the pole's axis.
-            var socket = new Vector3(footprint.center.x, visual.max.y - stickOut, footprint.center.z);
+            // centred means the shaft on the target's axis.
+            var point = new Vector3(footprint.center.x, visual.max.y - stickOut, footprint.center.z);
 
-            SnapPoints.Create(prefab, SocketName, socket);
-            Register(prefab, footprint, socket);
+            SnapPoints.Create(prefab, SocketName, point);
+            Register(prefab, footprint, point);
+
+            Depths.Add(prefab.name + " " + stickOut.ToString("F2") + (typed ? "" : " measured"));
 
             return true;
         }
@@ -159,7 +198,8 @@ namespace Sinka
         /// hazard modifier. The wood torch's capsule runs from 0.65 to 1.00 above its pivot with
         /// a 0.05 radius, so its lowest point is 0.60, and its visible top is 0.76. Sunk further
         /// than that, the pole it stands in is inside the capsule and burns out from under it.
-        /// Measured off the prefab rather than written down, so a modded torch gets its own floor.
+        /// Measured off the prefab rather than written down, so a modded torch gets its own floor
+        /// and an entry that names no depth gets its number from here.
         /// </summary>
         private static float StickOutFloor(GameObject prefab, Bounds visual)
         {
@@ -182,34 +222,40 @@ namespace Sinka
             if (!SnapPoints.Footprint(prefab, out var footprint)) return false;
 
             Register(prefab, footprint, socket.localPosition);
+
+            // Read back off the point that is already there rather than worked out again, so
+            // the second world of a session logs the same line as the first.
+            var showing = Visual(prefab, footprint).max.y - socket.localPosition.y;
+            Depths.Add(prefab.name + " " + showing.ToString("F2"));
+
             return true;
         }
 
         private static void Register(GameObject prefab, Bounds footprint, Vector3 socket)
         {
-            // A ghost aimed at a pole's top face is lowered until its colliders touch the hit -
+            // A ghost aimed at a target's top face is lowered until its colliders touch the hit -
             // the bottom of its footprint. So that is where the socket starts out relative to
-            // the pole's top point, and the distance the snap has to cover.
+            // the target's top point, and the distance the snap has to cover.
             var rest = Mathf.Abs(socket.y - footprint.min.y);
             var reach = Mathf.Max(VanillaReach, rest + FaceSlack);
 
             Reach[prefab.name] = reach;
 
             var piece = prefab.GetComponent<Piece>();
-            if (piece != null && !string.IsNullOrEmpty(piece.m_name)) TorchPieceNames.Add(piece.m_name);
+            if (piece != null && !string.IsNullOrEmpty(piece.m_name)) SocketPieceNames.Add(piece.m_name);
 
             if (SinkaConfig.Verbose.Value)
                 SinkaPlugin.Log.LogInfo(
-                    prefab.name + ": torch socket at " + socket.ToString("F2") + ", footprint "
+                    prefab.name + ": socket at " + socket.ToString("F2") + ", footprint "
                     + footprint.size.ToString("F2") + " from y " + footprint.min.y.ToString("F2")
-                    + ", reaches " + reach.ToString("F2") + "m to the top of the pole aimed at");
+                    + ", reaches " + reach.ToString("F2") + "m to the top of the target aimed at");
         }
 
         /// <summary>
         /// What you see, rather than what collides: the head a player means by "sticking out" is
         /// mesh, and a collider may stop short of it. Same live-geometry rules as the footprint,
         /// so a damage state or a destruction chunk does not stretch it. Falls back to the
-        /// footprint for a torch with no readable mesh.
+        /// footprint for a piece with no readable mesh.
         /// </summary>
         private static Bounds Visual(GameObject prefab, Bounds footprint)
         {
@@ -231,16 +277,17 @@ namespace Sinka
         }
 
         /// <summary>
-        /// A listed pole with no snap points of its own gives a torch nothing to snap to, and one
-        /// that is not in a build menu is a name that will never be standing anywhere. Both look
-        /// exactly like the feature not working, so both are said out loud.
+        /// A listed target with no snap points of its own gives a torch nothing to snap to, and
+        /// one that is not in a build menu is a name that will never be standing anywhere. Both
+        /// look exactly like the feature not working, so both are said out loud - along with how
+        /// far each socket ends up showing, which for a measured one is written down nowhere else.
         /// </summary>
-        internal static void ReportPoles()
+        internal static void ReportTargets()
         {
             var bare = new List<string>();
             var unbuildable = new List<string>();
 
-            foreach (var name in SinkaConfig.ConfiguredPoles())
+            foreach (var name in SinkaConfig.ConfiguredTargets())
             {
                 var prefab = ZNetScene.instance.GetPrefab(name);
                 if (prefab == null) continue; // already reported as matching no prefab
@@ -251,13 +298,17 @@ namespace Sinka
 
             if (bare.Count > 0)
                 SinkaPlugin.Log.LogWarning(
-                    "PolePrefabs names with no snap points of their own, so no torch can snap to "
+                    "Sockets targets with no snap points of their own, so nothing can sink into "
                     + "them: " + string.Join(", ", bare.ToArray()));
 
             if (unbuildable.Count > 0)
                 SinkaPlugin.Log.LogWarning(
-                    "PolePrefabs names that are in no build menu: "
+                    "Sockets targets that are in no build menu: "
                     + string.Join(", ", unbuildable.ToArray()));
+
+            if (Depths.Count > 0)
+                SinkaPlugin.Log.LogInfo(
+                    "Sockets, metres left showing: " + string.Join(", ", Depths.ToArray()));
         }
 
         /// <summary>
@@ -286,11 +337,24 @@ namespace Sinka
             return cut < 0 ? name : name.Substring(0, cut);
         }
 
+        /// <summary>
+        /// Whether the piece named here is paired with the target currently aimed at. One shared
+        /// pole list was free when every torch used it; with a list per entry, a torch aimed at a
+        /// pole somebody paired with a different torch has to come away with nothing.
+        /// </summary>
+        private static bool PairedWithAim(string prefabName)
+        {
+            if (_aimedTarget == null) return false;
+
+            var socket = SinkaConfig.SocketFor(prefabName);
+            return socket != null && socket.Targets.Contains(_aimedTarget);
+        }
+
         // ------------------------------------------------------------------ placement
 
         /// <summary>
-        /// Whether the placement ray is on the top face of a listed pole: a hit on the pole, facing
-        /// up, level with the pole's top point. The side of a pole is not enough - the wood torch
+        /// Whether the placement ray is on the top face of a target: a hit on the piece, facing
+        /// up, level with its top point. The side of a pole is not enough - the wood torch
         /// refuses any surface steeper than m_notOnTiltingSurface allows, and the game decides
         /// that from this same hit before any snapping, so a torch snapped from the side would
         /// sit in the pole looking right and stay red.
@@ -300,29 +364,39 @@ namespace Sinka
         private static void Aimed(bool __result, ref Vector3 point, ref Vector3 normal, ref Piece piece)
         {
             _aimedTop = null;
+            _aimedTarget = null;
 
             if (Reach.Count == 0 || !__result || piece == null || normal.y < 0.8f) return;
-            if (!SinkaConfig.IsPole(PrefabName(piece.gameObject.name))) return;
+
+            var name = PrefabName(piece.gameObject.name);
+            if (!SinkaConfig.IsSocketTarget(name)) return;
 
             var top = TopPoint(piece.transform);
-            if (top != null && Mathf.Abs(point.y - top.position.y) <= TopTolerance) _aimedTop = top;
+            if (top == null || Mathf.Abs(point.y - top.position.y) > TopTolerance) return;
+
+            _aimedTop = top;
+            _aimedTarget = name;
         }
 
         /// <summary>
-        /// Takes the socket off a torch's list of its own snap points unless it is the ghost in
-        /// hand and aimed at a pole top. This one list feeds the automatic snap, the keys that
-        /// pick a point by hand, and every other ghost's search for something to snap to, so
-        /// hiding it here is what keeps the socket out of all three.
+        /// Takes the socket off a piece's list of its own snap points unless it is the ghost in
+        /// hand and aimed at a target it is paired with. This one list feeds the automatic snap,
+        /// the keys that pick a point by hand, and every other ghost's search for something to
+        /// snap to, so hiding it here is what keeps the socket out of all three.
         /// </summary>
         [HarmonyPostfix]
         [HarmonyPatch(typeof(Piece), nameof(Piece.GetSnapPoints), new[] { typeof(List<Transform>) })]
         private static void Listed(Piece __instance, List<Transform> points)
         {
-            if (TorchPieceNames.Count == 0 || points == null) return;
-            if (!TorchPieceNames.Contains(__instance.m_name)) return;
+            if (SocketPieceNames.Count == 0 || points == null) return;
+            if (!SocketPieceNames.Contains(__instance.m_name)) return;
 
             if (_ghostLayer < 0) _ghostLayer = LayerMask.NameToLayer("ghost");
-            if (_aimedTop != null && __instance.gameObject.layer == _ghostLayer) return;
+
+            // Only past the m_name gate, so the allocation this costs is paid by a torch in hand
+            // rather than by every piece near one.
+            if (_aimedTop != null && __instance.gameObject.layer == _ghostLayer
+                && PairedWithAim(PrefabName(__instance.gameObject.name))) return;
 
             // This call appended the piece's own points at the end of a list that may already
             // hold other pieces' points, so only those are looked at.
@@ -342,8 +416,13 @@ namespace Sinka
             _ghost = null;
             if (_aimedTop == null || ghost == null) return;
 
+            // Once: name is a property that builds a new string on every read, and this runs
+            // every frame a piece is in hand.
+            var name = ghost.name;
+
             float reach;
-            if (!Reach.TryGetValue(ghost.name, out reach)) return;
+            if (!Reach.TryGetValue(name, out reach)) return;
+            if (!PairedWithAim(name)) return;
 
             _ghost = ghost;
             if (reach > maxSnapDistance) maxSnapDistance = reach;
@@ -357,9 +436,9 @@ namespace Sinka
         }
 
         /// <summary>
-        /// For a torch ghost aimed at a pole top, the candidates FindClosestSnapPoints chooses from
-        /// are cut down to that one point. _ghost is only set in that case, so every other
-        /// placement leaves here on one null check.
+        /// For a ghost aimed at the top of one of its own targets, the candidates
+        /// FindClosestSnapPoints chooses from are cut down to that one point. _ghost is only set
+        /// in that case, so every other placement leaves here on one null check.
         /// </summary>
         [HarmonyPostfix]
         [HarmonyPatch(typeof(Piece), nameof(Piece.GetSnapPoints),
