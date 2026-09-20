@@ -55,9 +55,8 @@ and the mod uses [semantic versioning](https://semver.org).
 - **A pairing is now per entry.** A torch aimed at a pole somebody paired with a *different*
   torch comes away with nothing, where one shared pole list could not tell the two apart.
 - Tested in game: a standing iron torch sinks into a wood pole at its measured 0.32, bowl
-  clear of the pole. The wood torch is unchanged at the 0.25 it released with. The darkwood,
-  ashwood and core wood poles have not been stood up yet; they resolve to real prefabs and
-  reach the build menu, which the startup log checks, and nothing else about them differs.
+  clear of the pole, and the pole tiers past wood take a torch the same way. The wood torch is
+  unchanged at the 0.25 it released with.
 - **`GapOverrides`, `Gap` per prefab.** One number for everything made "chests flush" and
   "stakes a hand apart" the same decision. Same punctuation as `PointOverrides`, and a prefab
   with no entry still uses `Gap`. Two pieces of the same kind meet at exactly that gap; two
@@ -93,7 +92,9 @@ and the mod uses [semantic versioning](https://semver.org).
   1.68 x 2.68 x 1.11 becomes 1.35 x 2.09 x 0.85, and `piece_sharpstakes` 2.40 x 1.56 x 2.67
   becomes 1.80 x 0.84 x 1.51. Each chains tighter than it did in 1.1.0. `piece_chest`,
   `piece_chest_wood`, `piece_chest_private` and `piece_chest_barrel` are untouched - they
-  already measured from colliders.
+  already measured from colliders. Checked in game afterwards: the tighter boxes chain
+  without the meshes running into each other, which was the risk of trusting a collider that
+  sits inside what you can see.
 - Tested in game: `piece_sharpstakes` now measures 1.80 x 0.84 x 1.51 with a ladder of 6 along
   x, and two panels chain end to end. `piece_dvergr_sharpstakes` moved from mesh guesswork to
   its real collider box, 2.40 x 1.70 x 3.94 centred 0.35 off in x - the numbers this file has
