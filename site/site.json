@@ -1,0 +1,10 @@
+{
+    "roadmap": [
+        {
+            "key": "torch-protects-its-pole",
+            "title": "A torch on a pole protects the pole",
+            "status": "planned",
+            "body": "Sinka already snaps a standing torch down into a wooden pole. The torch should now shield the pole it sits in.\n\nWhat that shield covers is still open: only fire, so the Ashlands stop burning the pole out from under its own torch, or every kind of damage, or a share of it. Take the torch away and the protection goes with it."
+        }
+    ]
+}
