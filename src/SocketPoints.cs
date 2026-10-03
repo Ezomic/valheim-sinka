@@ -316,7 +316,7 @@ namespace Sinka
         /// the vertical, so the highest local point is the highest in the world too, and a pole of
         /// any length is covered without knowing how long it is.
         /// </summary>
-        private static Transform TopPoint(Transform piece)
+        internal static Transform TopPoint(Transform piece)
         {
             Transform top = null;
 

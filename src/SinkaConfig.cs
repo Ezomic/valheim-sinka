@@ -66,6 +66,7 @@ namespace Sinka
         public static ConfigEntry<float> FenceLadderBelow;
         public static ConfigEntry<bool> SnapSockets;
         public static ConfigEntry<string> Sockets;
+        public static ConfigEntry<Protection> ProtectFrom;
         public static ConfigEntry<bool> StackContainers;
         public static ConfigEntry<bool> Verbose;
 
@@ -186,6 +187,24 @@ namespace Sinka
                 + "# highest of them is what the piece lands on - which is why a pole of any\n"
                 + "# length is covered without naming its length. The startup log names any\n"
                 + "# target that has none, is in no build menu, or matches no prefab at all.");
+
+            // Protection follows the torch rather than the pole: nothing is written to either,
+            // and a pole is protected exactly while a paired torch stands snapped in its top.
+            // All is the default because the request was "damage protection" without a
+            // qualifier; Fire is the narrow reading, and Off keeps the pairing purely visual.
+            ProtectFrom = config.Bind("Sockets", "ProtectFrom", Protection.All,
+                "What a torch snapped into a pole keeps that pole safe from, for as long as the\n"
+                + "# torch stands in it. Removing the torch removes the protection.\n"
+                + "#   All  - every hit on the pole is ignored: creatures, players, fire, the\n"
+                + "#          Ashlands cinders. The pole can then only be taken down by hand.\n"
+                + "#   Fire - only fire is ignored: Ashlands cinders, burning, and the fire\n"
+                + "#          share of a mixed hit. Creatures and players still break the pole.\n"
+                + "#   Off  - no protection.\n"
+                + "# It applies to every pole named as a target in Sockets. Only a torch Sinka\n"
+                + "# snapped counts: one set on top with the place-without-snapping key does not.\n"
+                + "# The wear that brings down a pole with nothing under it is never prevented.\n"
+                + "# The game's owner of the pole decides, so a player running without Sinka who\n"
+                + "# owns a pole at that moment does not honour it.");
 
             // Not a snap point, and the only thing here that is not. Two vanilla rules refuse
             // a chest on a chest - the placement test reads the *aimed* piece's m_supports,

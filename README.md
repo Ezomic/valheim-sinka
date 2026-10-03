@@ -14,7 +14,8 @@ stayed so existing config files keep working.
   follow sloping ground.
 - A standing torch placed on a pole snaps down into it, centred, with only its head showing
   above the top. Which torches and which poles is a config list, and how much of the torch
-  still shows is measured off its own fire when you do not say.
+  still shows is measured off its own fire when you do not say. While it stands there it
+  also protects the pole from damage (`ProtectFrom`).
 - `Gap` is per prefab where you want it to be, so chests can sit flush in the same world
   where stakes stand a hand apart.
 - A chest can be set down on top of another chest, which vanilla refuses outright. Read the
@@ -101,6 +102,23 @@ wants clearing whole.
 A target needs snap points of its own, because the highest of them is what the torch lands on.
 That is what covers a pole of any length without naming its length, and the startup log names
 any target that has none, is in no build menu, or matches no prefab at all.
+
+**A torch protects the pole it stands in.** While a paired torch is snapped into a pole, hits
+on that pole do nothing: a troll, a raider, an axe, the cinders of the Ashlands. Take the torch
+away and the pole is as breakable as any other, because nothing is remembered on either piece.
+Sinka asks the world each time the pole is hit, and a torch counts when its socket sits on the
+pole's top point, which is where the snap puts it, so it survives a logout and a reload with no
+state to lose. A torch set on top with the place-without-snapping key protects nothing, and the
+torch itself is not protected.
+
+`ProtectFrom` chooses how much. `All` (the default) ignores every hit on the pole, so only
+taking it down by hand removes it. `Fire` ignores only fire: Ashlands cinders, burning and the
+fire share of a mixed hit, while creatures and players still break the pole. `Off` turns the
+protection off and leaves the pairing as it was. It covers every pole named in `Sockets`. It
+never stops the wear that destroys a piece with nothing holding it up, so a torched pole still
+falls if you remove what it stands on. The game's owner of the pole makes the call, so on a
+server a player running without Sinka who happens to own the pole at that moment will not
+honour it.
 
 **Only the wood torch and the two wood poles have been played.** The other names come off the
 game's asset manifest, which lists what is on disk rather than what the game loads, so one may
@@ -197,10 +215,11 @@ it. A dedicated server gains nothing from having it installed, and loses nothing
 | `FenceLadderBelow` | `0.2` | How far under its own base a fence's lowest rung sits, in metres |
 | `SnapSockets` | `true` | Sink a piece listed in `Sockets` into the top of one of its targets |
 | `Sockets` | see below | What sinks into what, and how much of it shows |
+| `ProtectFrom` | `All` | What a snapped torch keeps its pole safe from: `All`, `Fire` or `Off` |
 | `StackContainers` | `true` | Let a chest be placed on another chest, and stay there. Read the server warning |
 | `Verbose` | `false` | Log the measured footprint of every piece that gets points, and the colliders behind it |
 
-`SnapSockets` and `Sockets` are in the `[Sockets]` section, `StackContainers` in `[Stacking]`,
+`SnapSockets`, `Sockets` and `ProtectFrom` are in the `[Sockets]` section, `StackContainers` in `[Stacking]`,
 `Verbose` in `[Diagnostics]`, and everything else in `[Snapping]`.
 
 `FencePrefabs` defaults to `wood_fence, piece_sharpstakes, piece_stakewall_blackwood,
@@ -275,7 +294,8 @@ them, they just have more work to do lining up their own.
 **`StackContainers` is the exception, and it is not a small one.** Support is worked out by
 whoever owns a piece, ownership follows whoever is nearby, and a player without Sinka
 destroys a stacked chest and its contents. See [Stacking chests](#stacking-chests). Everything
-else here stays entirely on your own machine.
+else here stays entirely on your own machine, apart from `ProtectFrom`: a pole's damage is
+decided by whoever owns it, so the protection holds only while a player running Sinka does.
 
 Sinka does not register with Longhouse Core's version check, so nothing tells you when two
 players are running different builds of it. In practice that only shows up as one player

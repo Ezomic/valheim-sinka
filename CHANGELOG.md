@@ -3,6 +3,25 @@
 Notable changes to Sinka. Format follows [Keep a Changelog](https://keepachangelog.com),
 and the mod uses [semantic versioning](https://semver.org).
 
+## [Unreleased]
+
+### Added
+
+- **A torch snapped into a pole protects that pole from damage** (`ProtectFrom`, default `All`).
+  While a paired torch stands in a pole, hits on the pole are ignored; remove the torch and the
+  protection goes with it. `Fire` narrows it to fire only (Ashlands cinders, burning, the fire
+  share of a mixed hit), `Off` turns it off. Nothing is stored: each time the pole is hit, the
+  owner checks whether a paired torch has its socket on the pole's top point, which is where
+  the snap puts it, so the protection survives a logout and a reload. A torch set on top
+  without snapping protects nothing, and the torch itself is not protected.
+- The seam is `WearNTear.ApplyDamage`, and only calls that carry a hit. The wear that destroys
+  a piece with nothing under it is left alone, so a torched pole still falls when its support
+  goes. The owner of the pole decides, so on a server the protection holds only while that
+  player runs Sinka.
+- Built and read against the decompiled game only; not yet played. There is no scenario for it:
+  Devkit's `place` cannot snap a torch into a pole, the socket has to land within a tenth of a
+  metre of the pole's top, and no step asserts a piece's health.
+
 ## [1.2.0] - 2026-09-20
 
 ### Added
