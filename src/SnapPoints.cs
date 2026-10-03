@@ -56,11 +56,13 @@ namespace Sinka
             var laddered = 0;
             var custom = 0;
             var sockets = 0;
+            var centred = 0;
             var oneWay = new System.Collections.Generic.List<string>();
 
             // The sockets are remembered per scene, like everything else here, and a borrowed
             // support flag must not outlive the world it was borrowed in.
             SocketPoints.Reset();
+            CentrePoints.Reset();
             Stacking.Reset();
 
             foreach (var prefab in scene.m_prefabs)
@@ -70,6 +72,7 @@ namespace Sinka
 
                 var points = SinkaConfig.PointOverride(prefab.name);
                 var socket = points == null && SocketPoints.Wanted(prefab);
+                var centre = points == null && !socket && CentrePoints.Wanted(prefab);
 
                 // A torch this mod already gave a socket to, in an earlier world of the same
                 // session. The point may outlive the scene, but the pairing rules and the
@@ -79,6 +82,8 @@ namespace Sinka
                 // it as somebody else's points and leave it unregistered.
                 if (socket && SocketPoints.Readopt(prefab)) { touched++; sockets++; continue; }
 
+                if (centre && CentrePoints.Readopt(prefab)) { touched++; centred++; continue; }
+
                 // Something already gave it snap points - vanilla, or another mod. Adding
                 // a second set on top would fight whatever placement it already has.
                 if (HasSnapPoints(prefab.transform)) { skipped++; continue; }
@@ -87,11 +92,12 @@ namespace Sinka
                 // chest its snap points, not every chest after it in the list.
                 try
                 {
-                    var ladder = points == null && !socket && UseLadder(prefab);
+                    var ladder = points == null && !socket && !centre && UseLadder(prefab);
 
                     var added = points != null
                         ? AddExact(prefab, points)
                         : socket ? SocketPoints.AddSocket(prefab)
+                        : centre ? CentrePoints.AddBase(prefab)
                         : ladder ? AddLadder(prefab) : AddCorners(prefab);
 
                     if (added)
@@ -99,6 +105,7 @@ namespace Sinka
                         touched++;
                         if (points != null) custom++;
                         else if (socket) sockets++;
+                        else if (centre) centred++;
                         else if (ladder) laddered++;
                     }
                 }
@@ -110,7 +117,7 @@ namespace Sinka
 
                 // A torch is never a target - nothing is allowed to snap to its socket - so
                 // which layer its colliders sit on does not matter to it.
-                if (!socket && !ReachableAsTarget(prefab)) oneWay.Add(prefab.name);
+                if (!socket && !centre && !ReachableAsTarget(prefab)) oneWay.Add(prefab.name);
             }
 
             if (oneWay.Count > 0)
@@ -126,7 +133,8 @@ namespace Sinka
             SinkaPlugin.Log.LogInfo(
                 "Added snap points to " + touched + " piece(s): " + laddered
                 + " fence ladder, " + custom + " from PointOverrides, " + sockets
-                + " socket, " + (touched - laddered - custom - sockets) + " corners. "
+                + " socket, " + centred + " centring, "
+                + (touched - laddered - custom - sockets - centred) + " corners. "
                 + skipped + " already had their own.");
 
             ReportMissingNames();
@@ -209,6 +217,12 @@ namespace Sinka
             Report("PointOverrides", SinkaConfig.ConfiguredOverrides());
             Report("GapOverrides", SinkaConfig.ConfiguredGaps());
 
+            if (SinkaConfig.CentreOnSurface.Value)
+            {
+                Report("CentreProps", SinkaConfig.ConfiguredCentreProps());
+                CentrePoints.ReportProps();
+            }
+
             if (SinkaConfig.SnapSockets.Value)
             {
                 Report("Sockets pieces", SinkaConfig.ConfiguredSockets());
@@ -273,7 +287,7 @@ namespace Sinka
             if (SinkaConfig.SnapFences.Value && SinkaConfig.IsFence(prefab.name))
                 return true;
 
-            if (SocketPoints.Wanted(prefab))
+            if (SocketPoints.Wanted(prefab) || CentrePoints.Wanted(prefab))
                 return true;
 
             return SinkaConfig.SnapUnsnappedPieces.Value;

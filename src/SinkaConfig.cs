@@ -53,6 +53,8 @@ namespace Sinka
             + DefaultPoles + " ; "
             + "piece_groundtorch_mist : " + DefaultPoles + " : 0.27";
 
+        private const string DefaultCentreProps = "piece_brazierfloor01, piece_brazierfloor02";
+
         public static ConfigEntry<bool> SnapContainers;
         public static ConfigEntry<bool> SnapFences;
         public static ConfigEntry<bool> SnapUnsnappedPieces;
@@ -66,6 +68,8 @@ namespace Sinka
         public static ConfigEntry<float> FenceLadderBelow;
         public static ConfigEntry<bool> SnapSockets;
         public static ConfigEntry<string> Sockets;
+        public static ConfigEntry<bool> CentreOnSurface;
+        public static ConfigEntry<string> CentreProps;
         public static ConfigEntry<bool> StackContainers;
         public static ConfigEntry<bool> Verbose;
 
@@ -187,6 +191,24 @@ namespace Sinka
                 + "# length is covered without naming its length. The startup log names any\n"
                 + "# target that has none, is in no build menu, or matches no prefab at all.");
 
+            // Aim a brazier at a floor tile and it lands dead centre. Nothing in vanilla centres
+            // anything: these props ship with no snap points, so every one is eyeballed. What they
+            // land on is derived from the piece under the crosshair rather than listed, so a
+            // modded floor or the lid of a chest works with nothing named; only the props are a
+            // list, kept tight on purpose.
+            CentreOnSurface = config.Bind("Centring", "CentreOnSurface", true,
+                "Aim a piece listed in CentreProps at the top face of any piece and it lands "
+                + "centred on that face. It centres only while the crosshair is on an upward "
+                + "face level with the target's top, and nothing ever snaps to the prop "
+                + "afterwards. Hold the place-without-snapping key to place it where you aim.");
+
+            CentreProps = config.Bind("Centring", "CentreProps", DefaultCentreProps,
+                "Comma-separated prefab names of the standing props that centre. Kept to the "
+                + "two floor braziers rather than every fire in the game: the bonfire and "
+                + "hearth names have not been confirmed against a running game, and a name "
+                + "that matches no prefab is reported in the log at startup, so adding one "
+                + "is safe to try.");
+
             // Not a snap point, and the only thing here that is not. Two vanilla rules refuse
             // a chest on a chest - the placement test reads the *aimed* piece's m_supports,
             // and the wear tick destroys a piece that ends up unsupported - so no arrangement
@@ -238,6 +260,22 @@ namespace Sinka
         {
             if (_fences == null) _fences = Split(FencePrefabs.Value);
             return _fences;
+        }
+
+        // ------------------------------------------------------------------ centring
+
+        private static HashSet<string> _centreProps;
+
+        public static bool IsCentreProp(string prefabName)
+        {
+            return ConfiguredCentreProps().Contains(prefabName);
+        }
+
+        /// <summary>Named props, so startup can report the ones that resolve to nothing.</summary>
+        public static HashSet<string> ConfiguredCentreProps()
+        {
+            if (_centreProps == null) _centreProps = Split(CentreProps.Value);
+            return _centreProps;
         }
 
         // ------------------------------------------------------------------ sockets
