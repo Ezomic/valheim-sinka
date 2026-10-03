@@ -16,7 +16,8 @@ and the mod uses [semantic versioning](https://semver.org).
   without snapping protects nothing, and the torch itself is not protected.
 - The seam is `WearNTear.ApplyDamage`, and only calls that carry a hit. The wear that destroys
   a piece with nothing under it is left alone, so a torched pole still falls when its support
-  goes. The owner of the pole decides, so on a server the protection holds only while that
+  goes. A protected pole still plays its hit effects and shows damage numbers, because only
+  `ApplyDamage` is skipped and not the rest of `RPC_Damage`; the pole just loses no health. The owner of the pole decides, so on a server the protection holds only while that
   player runs Sinka.
 - Built and read against the decompiled game only; not yet played. There is no scenario for it:
   Devkit's `place` cannot snap a torch into a pole, the socket has to land within a tenth of a
