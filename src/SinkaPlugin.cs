@@ -30,6 +30,7 @@ namespace Sinka
             _harmony.PatchAll(typeof(ScenePatches));
             _harmony.PatchAll(typeof(SocketPoints));
             _harmony.PatchAll(typeof(Stacking));
+            _harmony.PatchAll(typeof(TorchGuard));
 
             Log.LogInfo(PluginName + " " + PluginVersion + " by " + PluginAuthor + " - ready.");
         }
