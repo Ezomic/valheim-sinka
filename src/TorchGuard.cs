@@ -47,14 +47,39 @@ namespace Sinka
         /// </summary>
         private const float Seated = 0.1f;
 
-        /// <summary>Wide enough to find any socket that is Seated from the top point.</summary>
-        private const float Search = 0.5f;
+        /// <summary>
+        /// Piece.GetAllPiecesInRadius measures from each piece's PIVOT, and the socket is not at
+        /// the pivot: AddSocket puts it at (visual.max.y - stickOut) up the torch, so the pivot
+        /// of a seated torch is that far BELOW the pole's top point. For the wood torch that is
+        /// about 0.55 m, which a 0.5 m search never reached. 1.5 m clears the socket height of
+        /// any standing torch with room to spare, and Seats then does the exact test.
+        /// </summary>
+        private const float Search = 1.5f;
+
+        private static bool _failed;
 
         private static readonly List<Piece> Nearby = new List<Piece>();
 
         [HarmonyPrefix]
         [HarmonyPatch(typeof(WearNTear), nameof(WearNTear.ApplyDamage))]
         private static bool Damaged(WearNTear __instance, ref float damage, HitData hitData)
+        {
+            try
+            {
+                return Decide(__instance, ref damage, hitData);
+            }
+            catch (Exception e)
+            {
+                if (!_failed)
+                {
+                    _failed = true;
+                    SinkaPlugin.Log.LogWarning("Torch protection failed, damage proceeds: " + e);
+                }
+                return true;
+            }
+        }
+
+        private static bool Decide(WearNTear __instance, ref float damage, HitData hitData)
         {
             var mode = SinkaConfig.ProtectFrom.Value;
             if (mode == Protection.Off || hitData == null || damage <= 0f) return true;

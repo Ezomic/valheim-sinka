@@ -109,7 +109,8 @@ away and the pole is as breakable as any other, because nothing is remembered on
 Sinka asks the world each time the pole is hit, and a torch counts when its socket sits on the
 pole's top point, which is where the snap puts it, so it survives a logout and a reload with no
 state to lose. A torch set on top with the place-without-snapping key protects nothing, and the
-torch itself is not protected.
+torch itself is not protected. A protected pole still plays its hit effects and shows damage
+numbers, because only the health loss is skipped, not the rest of the hit; it simply loses nothing.
 
 `ProtectFrom` chooses how much. `All` (the default) ignores every hit on the pole, so only
 taking it down by hand removes it. `Fire` ignores only fire: Ashlands cinders, burning and the
