@@ -22,6 +22,17 @@ and the mod uses [semantic versioning](https://semver.org).
 - Built and read against the decompiled game only; not yet played. There is no scenario for it:
   Devkit's `place` cannot snap a torch into a pole, the socket has to land within a tenth of a
   metre of the pole's top, and no step asserts a piece's health.
+- **A standing brazier centres on the surface you aim at** (`CentreOnSurface`, on). Aim
+  `piece_brazierfloor01` or `piece_brazierfloor02` at the top of a floor tile and it lands dead
+  centre on the tile instead of wherever the crosshair was. What it lands on is derived: the
+  crosshair is on a piece, the face it hit points up, so the prop centres on that piece's
+  measured footprint. Wood floors, stone floors, a table top, the lid of a chest and modded
+  pieces all work with nothing named. Which props centre is `CentreProps`, kept to the two
+  floor braziers; the bonfire and hearth names are not confirmed against a running game, so
+  they are not in the default and can be added by name.
+- Gated on aim like the torch socket. The target's centre is not a point on any prefab: it is
+  one transform put on the aimed piece for the length of the search and removed again, so a
+  chest next to a centred brazier still only ever meets corners. Not played in game yet.
 
 ## [1.2.0] - 2026-09-20
 
