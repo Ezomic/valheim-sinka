@@ -60,6 +60,31 @@ of the piece is longer.
 The ladder is capped at 24 rungs per piece. A tall piece with a small step hits that cap and
 logs a warning saying where the ladder stopped.
 
+### Standing props, centred
+
+Aim a floor brazier at the top of a floor tile and it lands dead centre on the tile. Nothing in
+vanilla centres these: braziers ship with no snap points, so every one is placed by eye.
+
+Which props centre is `CentreProps`, and by default it is `piece_brazierfloor01` and
+`piece_brazierfloor02`. What they centre on is not a list. The crosshair is on a piece, the face
+it hit points up, so the prop centres on the middle of that piece's measured footprint. A wood
+floor, a stone floor, a table top, the lid of a chest and a modded floor all work with nothing
+named. The bonfire and hearth are left out of the default because their prefab names are not
+confirmed against a running game; add a name to `CentreProps` and an unmatched one is reported
+in the log at startup.
+
+It is gated on aim for the same reason the torch socket is. Snapping makes the closest pair of
+points coincide, so a face centre loose in the general point set would let a chest corner pair
+with it and land half a piece out of line. So the target's centre does not exist on any prefab:
+Sinka puts one point on the piece under the crosshair for the length of the placement search and
+takes it off again, and the prop's own base point is hidden from every list unless the prop is
+the ghost aimed at a top face. A chest placed near a centred brazier still only meets corners.
+
+The centre is the middle of the target's footprint box. A round or triangular top has a box
+centre that is not the middle of its face, which is the limit of deriving it from a box. Hold
+the place-without-snapping key to place a brazier where you aim. Turn the whole thing off with
+`CentreOnSurface = false`.
+
 ### Torches on poles
 
 Aim a standing torch at the top of a pole and it snaps down into the pole, centred on it,
@@ -217,10 +242,13 @@ it. A dedicated server gains nothing from having it installed, and loses nothing
 | `SnapSockets` | `true` | Sink a piece listed in `Sockets` into the top of one of its targets |
 | `Sockets` | see below | What sinks into what, and how much of it shows |
 | `ProtectFrom` | `All` | What a snapped torch keeps its pole safe from: `All`, `Fire` or `Off` |
+| `CentreOnSurface` | `true` | Centre a piece listed in `CentreProps` on the top face you aim at |
+| `CentreProps` | `piece_brazierfloor01, piece_brazierfloor02` | The standing props that centre |
 | `StackContainers` | `true` | Let a chest be placed on another chest, and stay there. Read the server warning |
 | `Verbose` | `false` | Log the measured footprint of every piece that gets points, and the colliders behind it |
 
-`SnapSockets`, `Sockets` and `ProtectFrom` are in the `[Sockets]` section, `StackContainers` in `[Stacking]`,
+`SnapSockets`, `Sockets` and `ProtectFrom` are in the `[Sockets]` section, `CentreOnSurface` and
+`CentreProps` in `[Centring]`, `StackContainers` in `[Stacking]`,
 `Verbose` in `[Diagnostics]`, and everything else in `[Snapping]`.
 
 `FencePrefabs` defaults to `wood_fence, piece_sharpstakes, piece_stakewall_blackwood,
