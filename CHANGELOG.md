@@ -170,8 +170,6 @@ Renamed from Dovetail on the way: Sinka is the dovetail joint itself in the Scan
 tongues, beside the pack's other Old Norse names. Nothing was published under the old
 name, so nothing breaks.
 
-## [Unreleased]
-
 ### Changed
 
 - **Core is gone entirely.** Sinka no longer references Core, declares it as a soft
