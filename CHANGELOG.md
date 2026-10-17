@@ -34,6 +34,15 @@ and the mod uses [semantic versioning](https://semver.org).
   one transform put on the aimed piece for the length of the search and removed again, so a
   chest next to a centred brazier still only ever meets corners. Not played in game yet.
 
+### Fixed
+
+- **A standing brazier could not be placed when aimed at the top of a piece** (LHM-80, reported
+  on the site bugs board). The centre point is taken off its piece at the end of the snap search,
+  and the game reads that point's parent a line later, so the placement update threw a
+  NullReferenceException on every frame and the brazier never went down. The point now stays
+  where it is until the next search and only stops being offered. Found by reading the game's own
+  placement code after the report; this feature had not been played in game when it shipped.
+
 ## [1.2.0] - 2026-09-20
 
 ### Added
