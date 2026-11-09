@@ -3,43 +3,52 @@
 Notable changes to Sinka. Format follows [Keep a Changelog](https://keepachangelog.com),
 and the mod uses [semantic versioning](https://semver.org).
 
-## [Unreleased]
+## [1.3.2] - 2026-11-09
 
 ### Fixed
 
-- **`PointOverrides` now works on a piece that ships its own snap points.** Such a piece, for
-  example `wood_stepladder`, was skipped before its override was read, so the points never
-  appeared and the startup line counted it under "already had their own". The points you give
-  are now added beside the game's, not in place of them.
+- **`PointOverrides` now works on a piece that ships its own snap points** (LHM-102, reported on
+  Discord). Such a piece, for example `wood_stepladder`, was skipped before its override was
+  read, so the points never appeared and the startup line counted it under "already had their
+  own". The points you give are now added beside the game's, not in place of them.
+
+## [1.3.1] - 2026-10-17
+
+### Fixed
+
+- **A standing brazier could not be placed when aimed at the top of a piece** (LHM-80, reported
+  on the site bugs board). The centre point is taken off its piece at the end of the snap search,
+  and the game reads that point's parent a line later, so the placement update threw a
+  NullReferenceException on every frame and the brazier never went down. The point now stays
+  where it is until the next search and only stops being offered. Found by reading the game's own
+  placement code after the report; this feature had not been played in game when it shipped.
+
+## [1.3.0] - 2026-10-08
 
 ### Added
 
-- **A torch snapped into a pole protects that pole from damage** (`ProtectFrom`, default `All`).
-  While a paired torch stands in a pole, hits on the pole are ignored; remove the torch and the
-  protection goes with it. `Fire` narrows it to fire only (Ashlands cinders, burning, the fire
-  share of a mixed hit), `Off` turns it off. Nothing is stored: each time the pole is hit, the
-  owner checks whether a paired torch has its socket on the pole's top point, which is where
-  the snap puts it, so the protection survives a logout and a reload. A torch set on top
-  without snapping protects nothing, and the torch itself is not protected.
-- The seam is `WearNTear.ApplyDamage`, and only calls that carry a hit. The wear that destroys
-  a piece with nothing under it is left alone, so a torched pole still falls when its support
-  goes. A protected pole still plays its hit effects and shows damage numbers, because only
-  `ApplyDamage` is skipped and not the rest of `RPC_Damage`; the pole just loses no health. The owner of the pole decides, so on a server the protection holds only while that
-  player runs Sinka.
-- Built and read against the decompiled game only; not yet played. There is no scenario for it:
-  Devkit's `place` cannot snap a torch into a pole, the socket has to land within a tenth of a
-  metre of the pole's top, and no step asserts a piece's health.
-- **A standing brazier centres on the surface you aim at** (`CentreOnSurface`, on). Aim
-  `piece_brazierfloor01` or `piece_brazierfloor02` at the top of a floor tile and it lands dead
-  centre on the tile instead of wherever the crosshair was. What it lands on is derived: the
-  crosshair is on a piece, the face it hit points up, so the prop centres on that piece's
-  measured footprint. Wood floors, stone floors, a table top, the lid of a chest and modded
-  pieces all work with nothing named. Which props centre is `CentreProps`, kept to the two
-  floor braziers; the bonfire and hearth names are not confirmed against a running game, so
-  they are not in the default and can be added by name.
-- Gated on aim like the torch socket. The target's centre is not a point on any prefab: it is
-  one transform put on the aimed piece for the length of the search and removed again, so a
-  chest next to a centred brazier still only ever meets corners. Not played in game yet.
+- **A torch snapped into a pole protects that pole (LHM-41).** `ProtectFrom` under `[Sockets]`:
+  `All` (default) ignores every hit on the pole while a paired torch stands in it, `Fire` ignores
+  only fire (Ashlands cinders, burning, the fire share of a mixed hit), `Off` disables it. Nothing
+  is stored. Each time the pole is hit, the owner checks whether a paired torch has its socket on
+  the pole's top point, so the protection survives a logout and goes when the torch does. A torch
+  set on top without snapping protects nothing, and the torch itself is not protected.
+  The hook is `WearNTear.ApplyDamage`, so the wear that destroys a pole with nothing under it is
+  left alone and a torched pole still falls when its support goes. A protected pole still plays its
+  hit effects and shows damage numbers, it just loses no health. The pole's owner decides, so on a
+  server the protection holds only while that player runs Sinka. If the check fails for any
+  reason the hit goes through.
+- **A standing brazier centres on the surface you aim at (LHM-14).** `CentreOnSurface` (on),
+  `CentreProps` under `[Centring]`. Aim `piece_brazierfloor01` or `piece_brazierfloor02` at the top
+  of a floor tile and it lands dead centre on the tile instead of where the crosshair was. The
+  target is whatever piece the crosshair is on, as long as the face it hit points up, so wood
+  floors, stone floors, a table top, a chest lid and modded pieces work with nothing named. Only
+  the two floor braziers are in `CentreProps`: the bonfire and hearth names are not confirmed
+  against a running game, so add them by name if you want to try. Gated on aim like the torch
+  socket, and the place-without-snapping key puts it where you aim.
+
+Both are built and read against the decompiled game, not played. There is no scenario for the
+torch (Devkit's `place` cannot snap a torch into a pole and no step asserts a piece's health).
 
 ## [1.2.0] - 2026-09-20
 
@@ -176,6 +185,8 @@ and atop each other, fences ladder up hillsides, and world-spawned loot stays un
 Renamed from Dovetail on the way: Sinka is the dovetail joint itself in the Scandinavian
 tongues, beside the pack's other Old Norse names. Nothing was published under the old
 name, so nothing breaks.
+
+## [Unreleased]
 
 ### Changed
 

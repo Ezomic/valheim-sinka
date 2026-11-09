@@ -157,11 +157,24 @@ namespace Sinka
 
         private static void Release()
         {
-            _searching = false;
+            EndSearch();
             if (_point == null) return;
 
-            _point.tag = "Untagged";
             _point.SetParent(null, false);
+        }
+
+        /// <summary>
+        /// Stops the point being offered, and leaves it where it is. It must stay parented: the
+        /// caller of FindClosestSnapPoints reads b.parent.position straight after it returns, and
+        /// this runs in a postfix, before that line. Unparenting here was the 1.3.0 bug, a
+        /// NullReferenceException out of UpdatePlacementGhost on every frame a brazier was aimed
+        /// at a piece's top, so the brazier could not be placed at all (LHM-80). The next search
+        /// (or Reset) takes it back off the piece.
+        /// </summary>
+        private static void EndSearch()
+        {
+            _searching = false;
+            if (_point != null) _point.tag = "Untagged";
         }
 
         // ------------------------------------------------------------------ placement
@@ -249,7 +262,7 @@ namespace Sinka
         [HarmonyPatch(typeof(Player), "FindClosestSnapPoints")]
         private static void Searched()
         {
-            Release();
+            EndSearch();
         }
 
         /// <summary>
