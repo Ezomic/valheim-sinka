@@ -309,6 +309,9 @@ Semicolons separate prefabs, a colon follows the prefab name, pipes separate poi
 commas separate the three local coordinates of one point. Decimals must use a dot, because a
 comma already means something here.
 
+A piece that already ships snap points of its own keeps them: the points you give are added
+beside the game's, so `wood_stepladder` can be given more rungs without losing its four.
+
 Naming a prefab is enough to get it snapped: it does not also have to be a container or a
 listed fence, and it skips the buildable filter. `Gap` and the fence ladder do not apply,
 since a point given by hand is used exactly as written. A malformed entry is reported in the
