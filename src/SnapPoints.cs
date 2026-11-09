@@ -22,6 +22,7 @@ namespace Sinka
     internal static class SnapPoints
     {
         private const string Tag = "snappoint";
+        private const string OverridePrefix = "snap_custom";
 
         /// <summary>
         /// The scene this has already been done to, rather than a plain bool.
@@ -86,7 +87,13 @@ namespace Sinka
 
                 // Something already gave it snap points - vanilla, or another mod. Adding
                 // a second set on top would fight whatever placement it already has.
-                if (HasSnapPoints(prefab.transform)) { skipped++; continue; }
+                // An override is the exception: it is added next to what is there, so a piece
+                // that ships a few points can be given more without losing its own.
+                if (HasSnapPoints(prefab.transform) && (points == null || HasOverridePoints(prefab.transform)))
+                {
+                    skipped++;
+                    continue;
+                }
 
                 // One awkward prefab - an odd collider, a missing mesh - should cost that
                 // chest its snap points, not every chest after it in the list.
@@ -195,7 +202,7 @@ namespace Sinka
         private static bool AddExact(GameObject prefab, Vector3[] points)
         {
             for (var i = 0; i < points.Length; i++)
-                Create(prefab, "snap_custom" + (i + 1), points[i]);
+                Create(prefab, OverridePrefix + (i + 1), points[i]);
 
             if (SinkaConfig.Verbose.Value)
                 SinkaPlugin.Log.LogInfo(
@@ -299,6 +306,11 @@ namespace Sinka
                 if (root.GetChild(i).CompareTag(Tag)) return true;
 
             return false;
+        }
+
+        private static bool HasOverridePoints(Transform root)
+        {
+            return root.Find(OverridePrefix + "1") != null;
         }
 
         private static bool AddCorners(GameObject prefab)

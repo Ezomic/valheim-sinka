@@ -5,6 +5,13 @@ and the mod uses [semantic versioning](https://semver.org).
 
 ## [Unreleased]
 
+### Fixed
+
+- **`PointOverrides` now works on a piece that ships its own snap points.** Such a piece, for
+  example `wood_stepladder`, was skipped before its override was read, so the points never
+  appeared and the startup line counted it under "already had their own". The points you give
+  are now added beside the game's, not in place of them.
+
 ### Added
 
 - **A torch snapped into a pole protects that pole from damage** (`ProtectFrom`, default `All`).
